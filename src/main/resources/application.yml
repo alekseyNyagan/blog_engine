@@ -3,3 +3,10 @@ spring.datasource.username: root
 spring.datasource.password: testtest
 spring.jpa.hibernate.ddl-auto: none
 spring.jpa.properties.hibernate.dialect: org.hibernate.dialect.MySQL8Dialect
+
+blog.title: DevPub
+blog.subtitle: Рассказы разработчиков
+blog.phone: +7 903 666-44-55
+blog.email: alexei.muraschkin@mail.ru
+blog.copyright: Мурашкин Алексей
+blog.copyrightfrom: 2021

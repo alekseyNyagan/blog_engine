@@ -2,19 +2,12 @@ package main.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "global_settings")
-public class GlobalSetting {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private int id;
+public class GlobalSetting extends AbstractEntity {
 
     @Column(name = "code")
     @NotNull
@@ -27,14 +20,6 @@ public class GlobalSetting {
     @Column(name = "value")
     @NotNull
     private String value;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public String getCode() {
         return code;

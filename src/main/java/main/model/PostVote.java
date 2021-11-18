@@ -3,9 +3,6 @@ package main.model;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
 import javax.persistence.Table;
@@ -14,11 +11,7 @@ import java.util.Date;
 
 @Entity
 @Table(name = "post_votes")
-public class PostVote {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private int id;
+public class PostVote extends AbstractEntity {
 
     @NotNull
     @OneToOne(cascade = CascadeType.ALL)
@@ -37,14 +30,6 @@ public class PostVote {
     @Column(name = "value")
     @NotNull
     private byte value;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public User getUser() {
         return user;
