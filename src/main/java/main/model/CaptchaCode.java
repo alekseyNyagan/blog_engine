@@ -2,20 +2,13 @@ package main.model;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
 @Table(name = "captcha_code")
-public class CaptchaCode {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private int id;
+public class CaptchaCode extends AbstractEntity {
 
     @Column(name = "time")
     @NotNull
@@ -28,14 +21,6 @@ public class CaptchaCode {
     @Column(name = "secret_code")
     @NotNull
     private String secretCode;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public Date getTime() {
         return time;

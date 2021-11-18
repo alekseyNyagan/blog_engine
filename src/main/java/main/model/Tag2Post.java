@@ -13,11 +13,7 @@ import javax.validation.constraints.NotNull;
 
 @Entity
 @Table(name = "tag2post")
-public class Tag2Post {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private int id;
+public class Tag2Post extends AbstractEntity{
 
     @NotNull
     @ManyToOne(cascade = CascadeType.ALL)
@@ -28,14 +24,6 @@ public class Tag2Post {
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "tag_id", referencedColumnName = "id")
     private Tag tag;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public Post getPost() {
         return post;

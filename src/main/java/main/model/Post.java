@@ -4,9 +4,8 @@ package main.model;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
@@ -15,23 +14,19 @@ import java.util.Date;
 
 @Entity
 @Table(name = "posts")
-public class Post {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private int id;
+public class Post extends AbstractEntity {
 
     @Column(name = "is_active")
     @NotNull
     private byte isActive;
 
     @Column(name = "moderation_status")
+    @Enumerated(EnumType.STRING)
     @NotNull
     private ModerationStatus moderationStatus;
 
     @Column(name = "moderator_id")
-    private int moderatorId;
+    private Integer moderatorId;
 
     @NotNull
     @ManyToOne(cascade = CascadeType.ALL)
@@ -53,14 +48,6 @@ public class Post {
     @Column(name = "view_count")
     @NotNull
     private int viewCount;
-
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
 
     public byte getIsActive() {
         return isActive;

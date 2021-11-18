@@ -11,12 +11,7 @@ import java.util.Date;
 
 @Entity
 @Table(name = "users")
-public class User {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private int id;
+public class User extends AbstractEntity {
 
     @Column(name = "is_moderator")
     @NotNull
@@ -44,15 +39,7 @@ public class User {
     @Column(name = "photo")
     private String photo;
 
-    public int getId() {
-        return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public byte getIsModerator() {
+    public byte isModerator() {
         return isModerator;
     }
 
