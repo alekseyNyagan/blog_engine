@@ -1,7 +1,7 @@
 package main.service;
 
-import java.util.Map;
+import main.api.response.GlobalSettingsResponse;
 
 public interface GlobalSettingsService {
-    public Map<String, Boolean> getGlobalSettings();
+    public GlobalSettingsResponse getGlobalSettings();
 }

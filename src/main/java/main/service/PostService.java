@@ -1,10 +1,8 @@
 package main.service;
 
-import main.dto.PostDTO;
-
-import java.util.List;
+import main.api.response.PostsResponse;
 
 public interface PostService {
-    public List<PostDTO> getPosts(int offset, int limit, String mode);
+    public PostsResponse getPosts(int offset, int limit, String mode);
     public long postCount();
 }

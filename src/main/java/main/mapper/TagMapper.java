@@ -30,13 +30,6 @@ public class TagMapper extends AbstractMapper<Tag, TagDTO> {
 
     @Override
     void mapSpecificFields(Tag source, TagDTO destination) {
-        double postsCount = postsRepository.count();
-        double mostPopularTagCount = postsRepository.maxCountPostsByTag();
-        double maxWeight = mostPopularTagCount / postsCount;
-        double coefficient = 1 / maxWeight;
-        double postsCountWithCurrentTag = postsRepository.countPostsByTag(source.getId());
-        double tagWeight = postsCountWithCurrentTag / postsCount;
-        double weight = coefficient * tagWeight;
-        destination.setWeight(weight);
+        destination.setWeight(postsRepository.getTagWeight(source.getId()));
     }
 }

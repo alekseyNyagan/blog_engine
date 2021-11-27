@@ -1,14 +1,11 @@
 package main.service;
 
-import main.dto.TagDTO;
+import main.api.response.TagsResponse;
 import main.mapper.TagMapper;
-import main.model.Tag;
 import main.repository.TagsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,8 +20,9 @@ public class TagsServiceImpl implements TagsService {
     }
 
     @Override
-    public Set<TagDTO> getTags() {
-        List<Tag> allTags = tagsRepository.findAll();
-        return allTags.stream().map(mapper::toDTO).collect(Collectors.toSet());
+    public TagsResponse getTags() {
+        TagsResponse tagResponse = new TagsResponse();
+        tagResponse.setTags(tagsRepository.findAll().stream().map(mapper::toDTO).collect(Collectors.toSet()));
+        return tagResponse;
     }
 }
