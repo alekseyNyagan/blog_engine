@@ -1,9 +1,7 @@
 package main.service;
 
-import main.dto.TagDTO;
-
-import java.util.Set;
+import main.api.response.TagsResponse;
 
 public interface TagsService {
-    public Set<TagDTO> getTags();
+    public TagsResponse getTags();
 }

@@ -7,10 +7,14 @@ import javax.persistence.Entity;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
+import java.util.List;
 
 @Entity
 @Table(name = "posts")
@@ -48,6 +52,20 @@ public class Post extends AbstractEntity {
     @Column(name = "view_count")
     @NotNull
     private int viewCount;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "post")
+    private List<PostComment> comments;
+
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "post")
+    private List<PostVote> votes;
+
+    @ManyToMany(cascade = CascadeType.ALL)
+    @JoinTable(
+            name = "tag2post"
+            , joinColumns = @JoinColumn(name = "post_id")
+            , inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private List<Tag> tags;
 
     public byte getIsActive() {
         return isActive;
@@ -112,4 +130,30 @@ public class Post extends AbstractEntity {
     public void setViewCount(int viewCount) {
         this.viewCount = viewCount;
     }
+
+    public List<PostComment> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<PostComment> comments) {
+        this.comments = comments;
+    }
+
+    public List<PostVote> getVotes() {
+        return votes;
+    }
+
+    public void setVotes(List<PostVote> votes) {
+        this.votes = votes;
+    }
+
+    public List<Tag> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<Tag> tags) {
+        this.tags = tags;
+    }
+
+
 }

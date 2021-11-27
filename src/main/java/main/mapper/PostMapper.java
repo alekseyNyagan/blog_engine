@@ -3,10 +3,7 @@ package main.mapper;
 import main.dto.PostDTO;
 import main.model.Post;
 import main.model.Tag;
-import main.repository.PostCommentsRepository;
-import main.repository.PostVotesRepository;
 import main.repository.PostsRepository;
-import main.repository.TagsRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -21,24 +18,17 @@ public class PostMapper extends AbstractMapper<Post, PostDTO> {
     private static final int ANNOUNCE_LENGTH = 150;
     private final ModelMapper mapper;
     private final PostsRepository postsRepository;
-    private final PostVotesRepository postVotesRepository;
-    private final PostCommentsRepository postCommentsRepository;
     private final PostCommentMapper postCommentMapper;
     private final UserMapper userMapper;
-    private final TagsRepository tagsRepository;
 
     @Autowired
-    public PostMapper(ModelMapper mapper, PostsRepository postsRepository, PostVotesRepository postVotesRepository,
-                      PostCommentsRepository postCommentsRepository, PostCommentMapper postCommentMapper,
-                      UserMapper userMapper, TagsRepository tagsRepository) {
+    public PostMapper(ModelMapper mapper, PostsRepository postsRepository, PostCommentMapper postCommentMapper,
+                      UserMapper userMapper) {
         super(Post.class, PostDTO.class);
         this.mapper = mapper;
         this.postsRepository = postsRepository;
-        this.postVotesRepository = postVotesRepository;
-        this.postCommentsRepository = postCommentsRepository;
         this.postCommentMapper = postCommentMapper;
         this.userMapper = userMapper;
-        this.tagsRepository = tagsRepository;
     }
 
     @PostConstruct
@@ -52,17 +42,18 @@ public class PostMapper extends AbstractMapper<Post, PostDTO> {
 
     @Override
     public void mapSpecificFields(Post source, PostDTO destination) {
-        String text = postsRepository.findById(source.getId()).get().getText();
-        String regex = "\\<.*?\\>";
+        Post post = postsRepository.findById(source.getId()).get();
+        String text = post.getText();
+        String htmlTagRegex = "\\<.*?\\>";
         destination.setUser(userMapper.toDTO(source.getUser()));
-        destination.setLikeCount(postVotesRepository.countPostVoteByPostAndValue(source, (byte) 1));
-        destination.setDislikeCount(postVotesRepository.countPostVoteByPostAndValue(source, (byte) -1));
-        destination.setCommentCount(postCommentsRepository.countPostCommentsByPost(source));
-        destination.setComments(postCommentsRepository.findPostCommentsByPost(source).stream()
+        destination.setLikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count());
+        destination.setDislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count());
+        destination.setCommentCount(post.getComments().size());
+        destination.setComments(post.getComments().stream()
                 .map(postCommentMapper::toDTO).collect(Collectors.toList()));
-        destination.setTimestamp(postsRepository.findById(source.getId()).get().getTime().getTime() / SECOND);
-        destination.setAnnounce(text.length() < ANNOUNCE_LENGTH ? text.replaceAll(regex, "")
-                : text.substring(0, ANNOUNCE_LENGTH).replaceAll(regex, "") + "...");
-        destination.setTags(tagsRepository.findTagsByPostId(source.getId()).stream().map(Tag::getName).collect(Collectors.toList()));
+        destination.setTimestamp(post.getTime().getTime() / SECOND);
+        destination.setAnnounce(text.length() < ANNOUNCE_LENGTH ? text.replaceAll(htmlTagRegex, "")
+                : text.substring(0, ANNOUNCE_LENGTH).replaceAll(htmlTagRegex, "") + "...");
+        destination.setTags(post.getTags().stream().map(Tag::getName).collect(Collectors.toList()));
     }
 }

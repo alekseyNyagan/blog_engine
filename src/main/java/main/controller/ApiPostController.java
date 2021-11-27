@@ -23,12 +23,6 @@ public class ApiPostController {
 
     @GetMapping("")
     private ResponseEntity<PostsResponse> getPosts(@RequestParam int offset, @RequestParam int limit, @RequestParam String mode) {
-        if (postService.postCount() == 0) {
-            return new ResponseEntity<>(new PostsResponse(), HttpStatus.OK);
-        }
-        PostsResponse postsResponse = new PostsResponse();
-        postsResponse.setPosts(postService.getPosts(offset, limit, mode));
-        postsResponse.setCount(postService.postCount());
-        return new ResponseEntity<>(postsResponse, HttpStatus.OK);
+        return new ResponseEntity<>(postService.getPosts(offset, limit, mode), HttpStatus.OK);
     }
 }

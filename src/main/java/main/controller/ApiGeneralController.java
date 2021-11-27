@@ -10,8 +10,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api")
 public class ApiGeneralController {
@@ -29,19 +27,12 @@ public class ApiGeneralController {
 
     @GetMapping("/tag")
     private TagsResponse getTags() {
-        TagsResponse tagResponse = new TagsResponse();
-        tagResponse.setTags(tagsService.getTags());
-        return tagResponse;
+        return tagsService.getTags();
     }
 
     @GetMapping("/settings")
     private GlobalSettingsResponse getGlobalSettings() {
-        GlobalSettingsResponse globalSettingsResponse = new GlobalSettingsResponse();
-        Map<String, Boolean> globalSettings = globalSettingsService.getGlobalSettings();
-        globalSettingsResponse.setMultiuserMode(globalSettings.get("MULTIUSER_MODE"));
-        globalSettingsResponse.setPostPremoderation(globalSettings.get("POST_PREMODERATION"));
-        globalSettingsResponse.setStatisticsIsPublic(globalSettings.get("STATISTICS_IS_PUBLIC"));
-        return globalSettingsResponse;
+        return globalSettingsService.getGlobalSettings();
     }
 
     @GetMapping("/init")
