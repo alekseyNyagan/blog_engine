@@ -7,7 +7,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Entity
-@Table(name = "captcha_code")
+@Table(name = "captcha_codes")
 public class CaptchaCode extends AbstractEntity {
 
     @Column(name = "time")
