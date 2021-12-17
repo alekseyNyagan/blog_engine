@@ -2,7 +2,7 @@ package main.service;
 
 import main.api.response.CalendarResponse;
 import main.api.response.PostsResponse;
-import main.dto.PostDTO;
+import main.dto.CurrentPostDTO;
 
 public interface PostService {
     public PostsResponse getPosts(int offset, int limit, String mode);
@@ -11,5 +11,6 @@ public interface PostService {
     public PostsResponse getPostsByTag(int offset, int limit, String tag);
     public PostsResponse getModerationPosts(int offset, int limit, String status);
     public CalendarResponse getCalendar(int year);
-    public PostDTO getPostById(int id);
+    public CurrentPostDTO getPostById(int id);
+    public PostsResponse getMyPosts(int offset, int limit, String status);
 }

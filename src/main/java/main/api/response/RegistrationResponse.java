@@ -1,9 +1,11 @@
 package main.api.response;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import main.error.AbstractError;
 
 import java.util.Map;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class RegistrationResponse {
     private boolean result;
     private Map<AbstractError, String> errors;

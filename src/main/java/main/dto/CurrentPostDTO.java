@@ -1,15 +1,22 @@
 package main.dto;
 
-public class PostDTO extends AbstractDTO {
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.List;
+
+public class CurrentPostDTO extends AbstractDTO {
     private int id;
     private long timestamp;
+    @JsonProperty("active")
+    private boolean isActive;
     private IncompleteUserDTO user;
     private String title;
-    private String announce;
+    private String text;
     private int likeCount;
-    private int commentCount;
     private int dislikeCount;
     private int viewCount;
+    private List<PostCommentDTO> comments;
+    private List<String> tags;
 
     public int getId() {
         return id;
@@ -25,6 +32,14 @@ public class PostDTO extends AbstractDTO {
 
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+    }
+
+    public boolean isActive() {
+        return isActive;
+    }
+
+    public void setActive(boolean active) {
+        isActive = active;
     }
 
     public IncompleteUserDTO getUser() {
@@ -43,12 +58,12 @@ public class PostDTO extends AbstractDTO {
         this.title = title;
     }
 
-    public String getAnnounce() {
-        return announce;
+    public String getText() {
+        return text;
     }
 
-    public void setAnnounce(String announce) {
-        this.announce = announce;
+    public void setText(String text) {
+        this.text = text;
     }
 
     public int getLikeCount() {
@@ -57,14 +72,6 @@ public class PostDTO extends AbstractDTO {
 
     public void setLikeCount(int likeCount) {
         this.likeCount = likeCount;
-    }
-
-    public int getCommentCount() {
-        return commentCount;
-    }
-
-    public void setCommentCount(int commentCount) {
-        this.commentCount = commentCount;
     }
 
     public int getDislikeCount() {
@@ -81,5 +88,21 @@ public class PostDTO extends AbstractDTO {
 
     public void setViewCount(int viewCount) {
         this.viewCount = viewCount;
+    }
+
+    public List<PostCommentDTO> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<PostCommentDTO> comments) {
+        this.comments = comments;
+    }
+
+    public List<String> getTags() {
+        return tags;
+    }
+
+    public void setTags(List<String> tags) {
+        this.tags = tags;
     }
 }

@@ -1,8 +1,9 @@
 package main.repository;
 
 import main.dto.CalendarDTO;
-import main.model.ModerationStatus;
+import main.model.enums.ModerationStatus;
 import main.model.Post;
+import main.model.User;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -17,7 +18,8 @@ import java.util.List;
 @Repository
 public interface PostsRepository extends JpaRepository<Post, Integer> {
 
-    public int countPostsByModerationStatus(ModerationStatus moderationStatus);
+    @Query(nativeQuery = true, value = "SELECT COUNT(*) FROM posts WHERE is_active = 1 AND moderation_status = :status")
+    public int countPostsByModerationStatus(@Param("status") String status);
 
     @Query(nativeQuery = true, value = "SELECT * FROM posts WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= now()")
     public List<Post> findAllByIsActiveAndModerationStatus(Pageable pageable);
@@ -46,7 +48,7 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
     public List<Post> findPostsByTag(@Param("name") String name, Pageable pageable);
 
     @Query(nativeQuery = true, value = "SELECT * FROM posts WHERE is_active = 1 AND moderation_status = :status")
-    public List<Post> findPostByModerationStatus(@Param("status") ModerationStatus moderationStatus, Pageable pageable);
+    public List<Post> findPostByModerationStatus(@Param("status") String status, Pageable pageable);
 
     @Query(nativeQuery = true, value = "SELECT YEAR(posts.time) FROM posts WHERE is_active = 1 AND moderation_status = 'ACCEPTED' GROUP BY YEAR(posts.time)")
     public List<Integer> findYearsByPostCount();
@@ -70,5 +72,13 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
     @Transactional
     @Query(nativeQuery = true, value = "UPDATE posts SET view_count = view_count + 1 WHERE id = :id")
     public void incrementViewCount(@Param("id") int id);
+
+    public List<Post> findPostsByUserAndIsActive(User user, byte is_active, Pageable pageable);
+
+    public List<Post> findPostsByUserAndIsActiveAndModerationStatus(User user, byte isActive, ModerationStatus moderationStatus, Pageable pageable);
+
+    public int countPostsByUserAndIsActive(User user, byte isActive);
+
+    public int countPostsByUserAndIsActiveAndModerationStatus(User user, byte isActive, ModerationStatus moderationStatus);
 
 }
