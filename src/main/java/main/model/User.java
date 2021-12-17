@@ -1,10 +1,9 @@
 package main.model;
 
+import main.model.enums.Role;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
@@ -38,6 +37,10 @@ public class User extends AbstractEntity {
 
     @Column(name = "photo")
     private String photo;
+
+    public Role getRole() {
+        return isModerator == 1 ? Role.MODERATOR : Role.USER;
+    }
 
     public byte isModerator() {
         return isModerator;

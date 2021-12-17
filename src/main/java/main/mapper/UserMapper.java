@@ -1,7 +1,7 @@
 package main.mapper;
 
 import main.dto.UserDTO;
-import main.model.ModerationStatus;
+import main.model.enums.ModerationStatus;
 import main.model.User;
 import main.repository.PostsRepository;
 import main.repository.UsersRepository;
@@ -36,6 +36,6 @@ public class UserMapper extends AbstractMapper<User, UserDTO>{
     void mapSpecificFields(User source, UserDTO destination) {
         boolean isModerator = usersRepository.findUserById(source.getId()).isModerator() == 1;
         destination.setSettings(isModerator);
-        destination.setModerationCount(isModerator ? postsRepository.countPostsByModerationStatus(ModerationStatus.NEW) : 0);
+        destination.setModerationCount(isModerator ? postsRepository.countPostsByModerationStatus(ModerationStatus.NEW.toString()) : 0);
     }
 }

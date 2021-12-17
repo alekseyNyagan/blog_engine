@@ -3,33 +3,46 @@ package main.service;
 import main.api.response.CalendarResponse;
 import main.api.response.PostsResponse;
 import main.dto.CalendarDTO;
+import main.dto.CurrentPostDTO;
 import main.dto.PostDTO;
 import main.exceptions.NoSuchPostException;
+import main.mapper.CurrentPostMapper;
 import main.mapper.PostMapper;
 import main.model.Post;
-import main.model.ModerationStatus;
+import main.model.enums.ModerationStatus;
 import main.repository.PostsRepository;
+import main.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class PostServiceImpl implements PostService {
 
     private static final int POSTS_ON_PAGE = 10;
+    private final UsersRepository usersRepository;
     private final PostsRepository postsRepository;
-    private final PostMapper mapper;
+    private final PostMapper postMapper;
+    private final CurrentPostMapper currentPostMapper;
 
     @Autowired
-    public PostServiceImpl(PostsRepository postsRepository, PostMapper mapper) {
+    public PostServiceImpl(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository
+            , CurrentPostMapper currentPostMapper) {
         this.postsRepository = postsRepository;
-        this.mapper = mapper;
+        this.postMapper = postMapper;
+        this.usersRepository = usersRepository;
+        this.currentPostMapper = currentPostMapper;
     }
 
     @Override
@@ -61,7 +74,7 @@ public class PostServiceImpl implements PostService {
                 break;
             }
         }
-        List<PostDTO> postDTOs = posts.stream().map(mapper::toDTO).collect(Collectors.toList());
+        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
         postsResponse.setPosts(postDTOs);
         postsResponse.setCount(postCount());
         return postsResponse;
@@ -73,7 +86,7 @@ public class PostServiceImpl implements PostService {
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
         List<PostDTO> postDTOs = postsRepository.findPostsByIsActiveAndModerationStatusAndTextLike(query, page)
-                .stream().map(mapper::toDTO).collect(Collectors.toList());
+                .stream().map(postMapper::toDTO).collect(Collectors.toList());
         postsResponse.setPosts(postDTOs);
         postsResponse.setCount(postCountByQuery(query));
         return postsResponse;
@@ -85,7 +98,7 @@ public class PostServiceImpl implements PostService {
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
         List<PostDTO> postDTOs = postsRepository.findPostsByIsActiveAndModerationStatusAndTime(date, page)
-                .stream().map(mapper::toDTO).collect(Collectors.toList());
+                .stream().map(postMapper::toDTO).collect(Collectors.toList());
         postsResponse.setPosts(postDTOs);
         postsResponse.setCount(countPostsByDate(date));
         return postsResponse;
@@ -96,17 +109,28 @@ public class PostServiceImpl implements PostService {
         PostsResponse postsResponse = new PostsResponse();
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
-        List<PostDTO> postDTOs = postsRepository.findPostsByTag(tag, page).stream().map(mapper::toDTO).collect(Collectors.toList());
+        List<PostDTO> postDTOs = postsRepository.findPostsByTag(tag, page).stream().map(postMapper::toDTO).collect(Collectors.toList());
         postsResponse.setPosts(postDTOs);
         postsResponse.setCount(countPostsByTag(tag));
         return postsResponse;
     }
 
     @Override
-    public PostDTO getPostById(int id) {
-        if (postsRepository.findById(id).isPresent()) {
-            postsRepository.incrementViewCount(id);
-            return mapper.toDTO(postsRepository.findById(id).get());
+    public CurrentPostDTO getPostById(int id) {
+        Optional<Post> post = postsRepository.findById(id);
+        if (post.isPresent()) {
+            if (SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken) {
+                postsRepository.incrementViewCount(id);
+            } else {
+                User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                main.model.User currentUser = usersRepository
+                        .findUserByEmail(user.getUsername())
+                        .orElseThrow(() -> new UsernameNotFoundException("user" + user.getUsername() + "not found"));
+                if (!post.get().getUser().equals(currentUser) && currentUser.isModerator() != 1) {
+                    postsRepository.incrementViewCount(id);
+                }
+            }
+            return currentPostMapper.toDTO(post.get());
         } else {
             throw new NoSuchPostException("Пост не найден");
         }
@@ -121,19 +145,19 @@ public class PostServiceImpl implements PostService {
         int count = 0;
         switch (status) {
             case "new":
-                posts = postsRepository.findPostByModerationStatus(ModerationStatus.NEW, page);
-                count = postsRepository.countPostsByModerationStatus(ModerationStatus.NEW);
+                posts = postsRepository.findPostByModerationStatus(ModerationStatus.NEW.toString(), page);
+                count = postsRepository.countPostsByModerationStatus(ModerationStatus.NEW.toString());
                 break;
             case "declined":
-                posts = postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED, page);
-                count = postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED);
+                posts = postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED.toString(), page);
+                count = postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED.toString());
                 break;
             case "accepted":
-                posts = postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED, page);
-                count = postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED);
+                posts = postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED.toString(), page);
+                count = postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED.toString());
                 break;
         }
-        List<PostDTO> postDTOs = posts.stream().map(mapper::toDTO).collect(Collectors.toList());
+        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
         postsResponse.setPosts(postDTOs);
         postsResponse.setCount(count);
         return postsResponse;
@@ -145,6 +169,39 @@ public class PostServiceImpl implements PostService {
         calendarResponse.setYears(postsRepository.findYearsByPostCount());
         calendarResponse.setPosts(postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarDTO::getDate, CalendarDTO::getCount)));
         return calendarResponse;
+    }
+
+    @Override
+    public PostsResponse getMyPosts(int offset, int limit, String status) {
+        PostsResponse postsResponse = new PostsResponse();
+        List<Post> posts = new ArrayList<>();
+        int count = 0;
+        int pageNumber = offset / POSTS_ON_PAGE;
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email = user.getUsername();
+        main.model.User currentUser = usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not fount"));
+        Pageable page = PageRequest.of(pageNumber, limit);
+        switch (status) {
+            case "inactive":
+                posts = postsRepository.findPostsByUserAndIsActive(currentUser, (byte) 0, page);
+                count = postsRepository.countPostsByUserAndIsActive(currentUser, (byte) 0);
+                break;
+            case "pending":
+                posts = postsRepository.findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.NEW, page);
+                count = postsRepository.countPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.NEW);
+                break;
+            case "declined":
+                posts = postsRepository.findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.DECLINED, page);
+                count = postsRepository.countPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.DECLINED);
+                break;
+            case "published":
+                posts = postsRepository.findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.ACCEPTED, page);
+                count = postsRepository.countPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.ACCEPTED);
+                break;
+        }
+        postsResponse.setPosts(posts.stream().map(postMapper::toDTO).collect(Collectors.toList()));
+        postsResponse.setCount(count);
+        return postsResponse;
     }
 
     private long postCount() {

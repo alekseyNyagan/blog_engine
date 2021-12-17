@@ -4,7 +4,7 @@ public class PostCommentDTO extends AbstractDTO {
     private int id;
     private long timestamp;
     private String text;
-    private UserDTO user;
+    private IncompleteUserDTO user;
 
     public int getId() {
         return id;
@@ -30,11 +30,11 @@ public class PostCommentDTO extends AbstractDTO {
         this.text = text;
     }
 
-    public UserDTO getUser() {
+    public IncompleteUserDTO getUser() {
         return user;
     }
 
-    public void setUser(UserDTO user) {
+    public void setUser(IncompleteUserDTO user) {
         this.user = user;
     }
 }

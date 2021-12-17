@@ -1,6 +1,8 @@
 package main.model;
 
 
+import main.model.enums.ModerationStatus;
+
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;

@@ -2,14 +2,12 @@ package main.mapper;
 
 import main.dto.PostDTO;
 import main.model.Post;
-import main.model.Tag;
 import main.repository.PostsRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.util.stream.Collectors;
 
 @Component
 public class PostMapper extends AbstractMapper<Post, PostDTO> {
@@ -18,16 +16,13 @@ public class PostMapper extends AbstractMapper<Post, PostDTO> {
     private static final int ANNOUNCE_LENGTH = 150;
     private final ModelMapper mapper;
     private final PostsRepository postsRepository;
-    private final PostCommentMapper postCommentMapper;
-    private final UserMapper userMapper;
+    private final IncompleteUserMapper userMapper;
 
     @Autowired
-    public PostMapper(ModelMapper mapper, PostsRepository postsRepository, PostCommentMapper postCommentMapper,
-                      UserMapper userMapper) {
+    public PostMapper(ModelMapper mapper, PostsRepository postsRepository, IncompleteUserMapper userMapper) {
         super(Post.class, PostDTO.class);
         this.mapper = mapper;
         this.postsRepository = postsRepository;
-        this.postCommentMapper = postCommentMapper;
         this.userMapper = userMapper;
     }
 
@@ -36,8 +31,7 @@ public class PostMapper extends AbstractMapper<Post, PostDTO> {
         mapper.createTypeMap(Post.class, PostDTO.class)
                 .addMappings(m -> m.skip(PostDTO::setAnnounce)).addMappings(m -> m.skip(PostDTO::setDislikeCount))
                 .addMappings(m -> m.skip(PostDTO::setLikeCount)).addMappings(m -> m.skip(PostDTO::setTimestamp))
-                .addMappings(m -> m.skip(PostDTO::setComments)).addMappings(m -> m.skip(PostDTO::setCommentCount))
-                .addMappings(m -> m.skip(PostDTO::setTags)).setPostConverter(toDTOConverter());
+                .addMappings(m -> m.skip(PostDTO::setCommentCount)).setPostConverter(toDTOConverter());
     }
 
     @Override
@@ -49,11 +43,8 @@ public class PostMapper extends AbstractMapper<Post, PostDTO> {
         destination.setLikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count());
         destination.setDislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count());
         destination.setCommentCount(post.getComments().size());
-        destination.setComments(post.getComments().stream()
-                .map(postCommentMapper::toDTO).collect(Collectors.toList()));
         destination.setTimestamp(post.getTime().getTime() / SECOND);
         destination.setAnnounce(text.length() < ANNOUNCE_LENGTH ? text.replaceAll(htmlTagRegex, "")
                 : text.substring(0, ANNOUNCE_LENGTH).replaceAll(htmlTagRegex, "") + "...");
-        destination.setTags(post.getTags().stream().map(Tag::getName).collect(Collectors.toList()));
     }
 }
