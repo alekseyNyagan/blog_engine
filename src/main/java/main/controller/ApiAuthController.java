@@ -1,9 +1,10 @@
 package main.controller;
 
 import main.api.request.LoginRequest;
+import main.api.request.PasswordRequest;
 import main.api.request.RegistrationRequest;
+import main.api.request.RestoreRequest;
 import main.api.response.*;
-import main.error.AbstractError;
 import main.service.CaptchaCodeService;
 import main.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,8 +16,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletRequest;
 import java.security.Principal;
-import java.util.Map;
 
 @RestController
 @RequestMapping("api/auth")
@@ -24,7 +26,6 @@ public class ApiAuthController {
 
     private final CaptchaCodeService captchaCodeService;
     private final UserService usersService;
-
 
 
     @Autowired
@@ -47,15 +48,8 @@ public class ApiAuthController {
     }
 
     @PostMapping("/register")
-    public RegistrationResponse addUser(@RequestBody RegistrationRequest registrationRequest) {
-        RegistrationResponse registrationResponse = new RegistrationResponse();
-        Map<AbstractError, String> errors = usersService.addUser(registrationRequest);
-        if (!errors.isEmpty()) {
-            registrationResponse.setErrors(errors);
-        } else {
-            registrationResponse.setResult(true);
-        }
-        return registrationResponse;
+    public ErrorsResponse addUser(@RequestBody RegistrationRequest registrationRequest) {
+        return usersService.addUser(registrationRequest);
     }
 
     @PostMapping("/login")
@@ -65,7 +59,17 @@ public class ApiAuthController {
 
     @GetMapping("/logout")
     @PreAuthorize("hasAuthority('user:write')")
-    public LogoutResponse logout() {
+    public ResultResponse logout() {
         return usersService.logout();
+    }
+
+    @PostMapping("/restore")
+    public ResponseEntity<ResultResponse> restore(@RequestBody RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException {
+        return ResponseEntity.ok(usersService.restore(restoreRequest, httpServletRequest));
+    }
+
+    @PostMapping("/password")
+    public ResponseEntity<ErrorsResponse> password(@RequestBody PasswordRequest passwordRequest) {
+        return ResponseEntity.ok(usersService.password(passwordRequest));
     }
 }

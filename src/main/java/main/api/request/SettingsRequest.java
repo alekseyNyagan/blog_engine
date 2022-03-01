@@ -1,10 +1,8 @@
-package main.api.response;
+package main.api.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Objects;
-
-public class GlobalSettingsResponse {
+public class SettingsRequest {
     @JsonProperty("MULTIUSER_MODE")
     private boolean multiuserMode;
     @JsonProperty("POST_PREMODERATION")
@@ -34,18 +32,5 @@ public class GlobalSettingsResponse {
 
     public void setStatisticsIsPublic(boolean statisticsIsPublic) {
         this.statisticsIsPublic = statisticsIsPublic;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        GlobalSettingsResponse that = (GlobalSettingsResponse) o;
-        return multiuserMode == that.multiuserMode && postPremoderation == that.postPremoderation && statisticsIsPublic == that.statisticsIsPublic;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(multiuserMode, postPremoderation, statisticsIsPublic);
     }
 }

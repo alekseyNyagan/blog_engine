@@ -1,17 +1,27 @@
 package main.service;
 
-import main.api.response.CalendarResponse;
-import main.api.response.PostsResponse;
+import main.api.request.ModerationRequest;
+import main.api.request.PostRequest;
+import main.api.request.PostVoteRequest;
+import main.api.response.*;
 import main.dto.CalendarDTO;
 import main.dto.CurrentPostDTO;
 import main.dto.PostDTO;
+import main.error.AbstractError;
+import main.error.ImageError;
+import main.error.TextError;
+import main.error.TitleError;
 import main.exceptions.NoSuchPostException;
 import main.mapper.CurrentPostMapper;
 import main.mapper.PostMapper;
 import main.model.Post;
+import main.model.PostVote;
+import main.model.Tag;
 import main.model.enums.ModerationStatus;
+import main.repository.PostVotesRepository;
 import main.repository.PostsRepository;
 import main.repository.UsersRepository;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,28 +31,32 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class PostServiceImpl implements PostService {
 
+    private static final int MAX_FILE_SIZE = 5_242_880;
     private static final int POSTS_ON_PAGE = 10;
     private final UsersRepository usersRepository;
     private final PostsRepository postsRepository;
+    private final PostVotesRepository postVotesRepository;
     private final PostMapper postMapper;
     private final CurrentPostMapper currentPostMapper;
 
     @Autowired
     public PostServiceImpl(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository
-            , CurrentPostMapper currentPostMapper) {
+            , CurrentPostMapper currentPostMapper, PostVotesRepository postVotesRepository) {
         this.postsRepository = postsRepository;
         this.postMapper = postMapper;
         this.usersRepository = usersRepository;
         this.currentPostMapper = currentPostMapper;
+        this.postVotesRepository = postVotesRepository;
     }
 
     @Override
@@ -202,6 +216,177 @@ public class PostServiceImpl implements PostService {
         postsResponse.setPosts(posts.stream().map(postMapper::toDTO).collect(Collectors.toList()));
         postsResponse.setCount(count);
         return postsResponse;
+    }
+
+    @Override
+    public ErrorsResponse addPost(PostRequest postRequest, boolean postPremoderation) {
+        return createPost(0, postRequest, postPremoderation);
+    }
+
+    @Override
+    public ErrorsResponse updatePost(int id, PostRequest postRequest, boolean postPremoderation) {
+        return createPost(id, postRequest, postPremoderation);
+    }
+
+    @Override
+    public ResultResponse like(PostVoteRequest postVoteRequest) {
+        ResultResponse resultResponse = new ResultResponse();
+        main.model.User currentUser = getAuthUser();
+        Post post = postsRepository.findById(postVoteRequest.getPostId()).get();
+        Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
+        if (postVote.isEmpty()) {
+            PostVote newPostVote = new PostVote();
+            newPostVote.setPost(post);
+            newPostVote.setUser(currentUser);
+            newPostVote.setTime(new Date());
+            newPostVote.setValue((byte) 1);
+            postVotesRepository.save(newPostVote);
+            resultResponse.setResult(true);
+        } else if (postVote.get().getValue() == -1) {
+            postVotesRepository.updatePostVote((byte) 1, currentUser.getId(), post.getId());
+            resultResponse.setResult(true);
+        }
+        return resultResponse;
+    }
+
+    @Override
+    public ResultResponse dislike(PostVoteRequest postVoteRequest) {
+        ResultResponse resultResponse = new ResultResponse();
+        main.model.User currentUser = getAuthUser();
+        Post post = postsRepository.findById(postVoteRequest.getPostId()).get();
+        Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
+        if (postVote.isEmpty()) {
+            PostVote newPostVote = new PostVote();
+            newPostVote.setPost(post);
+            newPostVote.setUser(currentUser);
+            newPostVote.setTime(new Date());
+            newPostVote.setValue((byte) -1);
+            postVotesRepository.save(newPostVote);
+            resultResponse.setResult(true);
+        } else if (postVote.get().getValue() == 1) {
+            postVotesRepository.updatePostVote((byte) -1, currentUser.getId(), post.getId());
+            resultResponse.setResult(true);
+        }
+        return resultResponse;
+    }
+
+    @Override
+    public StatisticsResponse getMyStatistic() {
+        main.model.User currentUser = getAuthUser();
+        return postsRepository.getMyStatistic(currentUser.getId());
+    }
+
+    @Override
+    public StatisticsResponse getAllStatistic() {
+        return postsRepository.getAllStatistic();
+    }
+
+    @Override
+    public ResultResponse moderation(ModerationRequest moderationRequest) {
+        ResultResponse resultResponse = new ResultResponse();
+        Optional<Post> post = postsRepository.findById(moderationRequest.getPostId());
+        main.model.User moderator = getAuthUser();
+        if (moderationRequest.getDecision().equals("accept")) {
+            postsRepository.updateModerationStatus("ACCEPTED", moderator.getId(), post.get().getId());
+        } else if (moderationRequest.getDecision().equals("decline")) {
+            postsRepository.updateModerationStatus("DECLINED", moderator.getId(), post.get().getId());
+        }
+        resultResponse.setResult(true);
+        return resultResponse;
+    }
+
+    @Override
+    public Object image(MultipartFile multipartFile) throws IOException {
+        String contentType = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
+        if (multipartFile.getSize() < MAX_FILE_SIZE && (contentType.equals("png") || contentType.equals("jpg"))) {
+            String hash = generateRandomHash(5);
+            String path = "./upload/ab/cd/ef/" + hash + "." + contentType;
+            FileOutputStream outputStream = new FileOutputStream(path);
+            outputStream.write(multipartFile.getBytes());
+            return "/upload/ab/cd/ef/" + hash + "." + contentType;
+        } else {
+            ErrorsResponse errorsResponse = new ErrorsResponse();
+            Map<AbstractError, String> errors = new HashMap<>();
+            if (multipartFile.getSize() > MAX_FILE_SIZE) {
+                ImageError imageError = new ImageError("Размер файла превышает допустимый размер");
+                errors.put(imageError, imageError.getMessage());
+            }
+            ImageError imageError = new ImageError("Неверный формат изображения! Изображение должно быть в формате png или jpg");
+            errors.put(imageError, imageError.getMessage());
+            errorsResponse.setResult(false);
+            errorsResponse.setErrors(errors);
+            return errorsResponse;
+        }
+    }
+
+    private ErrorsResponse createPost(int id, PostRequest postRequest, boolean postPremoderation) {
+        ErrorsResponse errorsResponse = new ErrorsResponse();
+        Map<AbstractError, String> errors = new HashMap<>();
+        String title = postRequest.getTitle();
+        String text = postRequest.getText();
+        String htmlTagRegexp = "\\<.*?\\>";
+        main.model.User currentUser = getAuthUser();
+        if (text.replaceAll(htmlTagRegexp, "").length() > 50 && title.length() > 3) {
+            Post post = new Post();
+            List<Tag> tags = new ArrayList<>();
+            post.setIsActive(postRequest.getActive());
+            post.setTitle(postRequest.getTitle());
+            post.setText(postRequest.getText());
+            post.setUser(currentUser);
+            postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
+            post.setTags(tags);
+            if (id != 0) {
+                post.setId(id);
+            }
+            if (postPremoderation) {
+                if (currentUser.isModerator() != 1) {
+                    post.setModerationStatus(ModerationStatus.NEW);
+                } else {
+                    post.setModerationStatus(ModerationStatus.ACCEPTED);
+                }
+            } else {
+                post.setModerationStatus(ModerationStatus.ACCEPTED);
+            }
+            if (postRequest.getTimestamp() <= new Date().getTime()) {
+                post.setTime(new Date());
+            } else {
+                post.setTime(new Date(postRequest.getTimestamp()));
+            }
+            errorsResponse.setResult(true);
+            postsRepository.save(post);
+        } else {
+            if (title.isEmpty()) {
+                TitleError titleError = new TitleError("Заголовок не установлен");
+                errors.put(titleError, titleError.getMessage());
+            } else if (title.length() < 3) {
+                TitleError titleError = new TitleError("Заголовок слишком короткий");
+                errors.put(titleError, titleError.getMessage());
+            }
+            if (text.replaceAll(htmlTagRegexp, "").isEmpty()) {
+                TextError textError = new TextError("Текст публикации пустой");
+                errors.put(textError, textError.getMessage());
+            } else if (text.replaceAll(htmlTagRegexp, "").length() < 50) {
+                TextError textError = new TextError("Текст публикации слишком короткий");
+                errors.put(textError, textError.getMessage());
+            }
+            errorsResponse.setErrors(errors);
+        }
+        return errorsResponse;
+    }
+
+    private main.model.User getAuthUser() {
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        String email = user.getUsername();
+        return usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not fount"));
+    }
+
+    private String generateRandomHash(int length) {
+        String chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+        Random rnd = new Random();
+        StringBuilder sb = new StringBuilder(length);
+        for (int i = 0; i < length; i++)
+            sb.append(chars.charAt(rnd.nextInt(chars.length())));
+        return sb.toString();
     }
 
     private long postCount() {

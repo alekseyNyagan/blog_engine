@@ -1,13 +1,16 @@
 package main.service;
 
+import main.api.request.SettingsRequest;
 import main.api.response.GlobalSettingsResponse;
 import main.dto.GlobalSettingDTO;
 import main.mapper.GlobalSettingMapper;
+import main.model.GlobalSetting;
 import main.repository.GlobalSettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,5 +33,16 @@ public class GlobalSettingsServiceImpl implements GlobalSettingsService {
         globalSettingsResponse.setPostPremoderation(settings.get("POST_PREMODERATION"));
         globalSettingsResponse.setStatisticsIsPublic(settings.get("STATISTICS_IS_PUBLIC"));
         return globalSettingsResponse;
+    }
+
+    @Override
+    public void updateGlobalSettings(SettingsRequest settingsRequest) {
+        Set<GlobalSettingDTO> globalSettingDTOS = Set.of(new GlobalSettingDTO("MULTIUSER_MODE", settingsRequest.isMultiuserMode()),
+                new GlobalSettingDTO("POST_PREMODERATION", settingsRequest.isPostPremoderation()),
+                new GlobalSettingDTO("STATISTICS_IS_PUBLIC", settingsRequest.isStatisticsIsPublic()));
+        Map<String, String> globalSettings = globalSettingDTOS.stream().map(mapper::toEntity).collect(Collectors.toMap(GlobalSetting::getCode, GlobalSetting::getValue));
+        globalSettingsRepository.updateSetting(globalSettings.get("MULTIUSER_MODE"), "MULTIUSER_MODE");
+        globalSettingsRepository.updateSetting(globalSettings.get("POST_PREMODERATION"), "POST_PREMODERATION");
+        globalSettingsRepository.updateSetting(globalSettings.get("STATISTICS_IS_PUBLIC"), "STATISTICS_IS_PUBLIC");
     }
 }

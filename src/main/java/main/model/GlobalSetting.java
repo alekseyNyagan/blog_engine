@@ -21,6 +21,15 @@ public class GlobalSetting extends AbstractEntity {
     @NotNull
     private String value;
 
+    public GlobalSetting() {
+    }
+
+    public GlobalSetting(String code, String name, String value) {
+        this.code = code;
+        this.name = name;
+        this.value = value;
+    }
+
     public String getCode() {
         return code;
     }

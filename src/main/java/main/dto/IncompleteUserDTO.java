@@ -2,6 +2,8 @@ package main.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.util.Objects;
+
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class IncompleteUserDTO extends AbstractDTO {
     private int id;
@@ -30,5 +32,18 @@ public class IncompleteUserDTO extends AbstractDTO {
 
     public void setPhoto(String photo) {
         this.photo = photo;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        IncompleteUserDTO that = (IncompleteUserDTO) o;
+        return id == that.id && Objects.equals(name, that.name) && Objects.equals(photo, that.photo);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, name, photo);
     }
 }

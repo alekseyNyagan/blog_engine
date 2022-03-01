@@ -1,6 +1,6 @@
 package main.api.response;
 
-public class LogoutResponse {
+public class ResultResponse {
     private boolean result;
 
     public boolean isResult() {

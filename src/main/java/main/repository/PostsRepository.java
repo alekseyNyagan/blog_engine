@@ -1,5 +1,6 @@
 package main.repository;
 
+import main.api.response.StatisticsResponse;
 import main.dto.CalendarDTO;
 import main.model.enums.ModerationStatus;
 import main.model.Post;
@@ -77,8 +78,30 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
 
     public List<Post> findPostsByUserAndIsActiveAndModerationStatus(User user, byte isActive, ModerationStatus moderationStatus, Pageable pageable);
 
+    @Query(nativeQuery = true, value = "WITH post_temp AS (" +
+            "SELECT IFNULL(COUNT(id), 0) AS postsCount, IFNULL(SUM(view_count), 0) AS viewsCount, UNIX_TIMESTAMP(MIN(time)) AS firstPublication FROM posts " +
+            "WHERE user_id = :user_id AND is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= NOW()), " +
+            "post_votes_temp AS (" +
+            "SELECT IFNULL(SUM(IF(value = 1, 1, 0)), 0) AS likesCount, IFNULL(SUM(IF(value = -1, 1, 0)), 0) AS dislikesCount FROM post_votes WHERE user_id = :user_id)" +
+            "SELECT postsCount, viewsCount, firstPublication, likesCount, dislikesCount FROM post_temp JOIN post_votes_temp")
+    public StatisticsResponse getMyStatistic(@Param("user_id") int userId);
+
+    @Query(nativeQuery = true, value = "WITH post_temp AS (" +
+            "SELECT IFNULL(COUNT(id), 0) AS postsCount, IFNULL(SUM(view_count), 0) AS viewsCount, UNIX_TIMESTAMP(MIN(time)) AS firstPublication FROM posts " +
+            "WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= NOW()), " +
+            "post_votes_temp AS (" +
+            "SELECT IFNULL(SUM(IF(value = 1, 1, 0)), 0) AS likesCount, IFNULL(SUM(IF(value = -1, 1, 0)), 0) AS dislikesCount FROM post_votes " +
+            "JOIN posts p on post_votes.post_id = p.id WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND p.time <= NOW())" +
+            "SELECT postsCount, viewsCount, firstPublication, likesCount, dislikesCount FROM post_temp JOIN post_votes_temp")
+    public StatisticsResponse getAllStatistic();
+
     public int countPostsByUserAndIsActive(User user, byte isActive);
 
     public int countPostsByUserAndIsActiveAndModerationStatus(User user, byte isActive, ModerationStatus moderationStatus);
+
+    @Query(nativeQuery = true, value = "UPDATE posts SET moderation_status = :moderation_status, moderator_id = :moderator_id WHERE id = :id")
+    @Transactional
+    @Modifying
+    public void updateModerationStatus(@Param("moderation_status") String moderationStatus, @Param("moderator_id") int moderatorId, @Param("id") int id);
 
 }

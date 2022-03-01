@@ -45,6 +45,6 @@ public class PostMapper extends AbstractMapper<Post, PostDTO> {
         destination.setCommentCount(post.getComments().size());
         destination.setTimestamp(post.getTime().getTime() / SECOND);
         destination.setAnnounce(text.length() < ANNOUNCE_LENGTH ? text.replaceAll(htmlTagRegex, "")
-                : text.substring(0, ANNOUNCE_LENGTH).replaceAll(htmlTagRegex, "") + "...");
+                : text.replaceAll(htmlTagRegex, "").replace("&nbsp;"," ").substring(0, ANNOUNCE_LENGTH) + "...");
     }
 }
