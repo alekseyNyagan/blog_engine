@@ -12,6 +12,19 @@ import java.util.Date;
 @Table(name = "users")
 public class User extends AbstractEntity {
 
+    public User() {
+    }
+
+    public User(byte isModerator, Date regTime, String name, String email, String password, String code, String photo) {
+        this.isModerator = isModerator;
+        this.regTime = regTime;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.code = code;
+        this.photo = photo;
+    }
+
     @Column(name = "is_moderator")
     @NotNull
     private byte isModerator;

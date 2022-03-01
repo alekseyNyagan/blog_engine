@@ -6,7 +6,7 @@ import main.error.AbstractError;
 import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RegistrationResponse {
+public class ErrorsResponse {
     private boolean result;
     private Map<AbstractError, String> errors;
 

@@ -22,6 +22,24 @@ import java.util.List;
 @Table(name = "posts")
 public class Post extends AbstractEntity {
 
+    public Post() {
+    }
+
+    public Post(byte isActive, ModerationStatus moderationStatus, Integer moderatorId, User user, Date time, String title,
+                String text, int viewCount, List<PostComment> comments, List<PostVote> votes, List<Tag> tags) {
+        this.isActive = isActive;
+        this.moderationStatus = moderationStatus;
+        this.moderatorId = moderatorId;
+        this.user = user;
+        this.time = time;
+        this.title = title;
+        this.text = text;
+        this.viewCount = viewCount;
+        this.comments = comments;
+        this.votes = votes;
+        this.tags = tags;
+    }
+
     @Column(name = "is_active")
     @NotNull
     private byte isActive;

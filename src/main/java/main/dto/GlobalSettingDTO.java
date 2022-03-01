@@ -4,6 +4,14 @@ public class GlobalSettingDTO extends AbstractDTO {
     private String code;
     private boolean value;
 
+    public GlobalSettingDTO() {
+    }
+
+    public GlobalSettingDTO(String code, boolean value) {
+        this.code = code;
+        this.value = value;
+    }
+
     public String getCode() {
         return code;
     }
