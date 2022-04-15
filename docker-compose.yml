@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  app:
+    image: blogengine:v1
+    build:
+      context: .
+    container_name: app
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      - MYSQL_DB_HOST=jdbc:mysql
+      - MYSQL_DB_PORT=//db:3306
+      - MYSQL_SCHEMA_NAME=blog_engine
+      - MYSQL_USERNAME=root
+      - MYSQL_USER_PASSWORD=testtest
+      - GMAIL_USERNAME=
+      - GMAIL_PASSWORD=
+
+  db:
+    image: mysql:8.0.25
+    container_name: db
+    environment:
+      - MYSQL_ROOT_PASSWORD=testtest
+      - MYSQL_DATABASE=blog_engine
+    command: mysqld --sql_mode="STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION"
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      retries: 10
+      timeout: 5s
+
+  flyway:
+    container_name: my-flyway
+    image: flyway/flyway:latest
+    environment:
+      - FLYWAY_USER=root
+      - FLYWAY_PASSWORD=testtest
+      - FLYWAY_URL=jdbc:mysql://db:3306/blog_engine
+      - FLYWAY_SCHEMAS=blog_engine
+    command: -locations=filesystem:/flyway/sql -connectRetries=60 migrate
+    volumes:
+     - $PWD/src/main/resources/db/migration:/flyway/sql
