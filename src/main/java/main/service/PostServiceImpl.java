@@ -35,6 +35,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,27 +69,23 @@ public class PostServiceImpl implements PostService {
         List<Post> posts = new ArrayList<>();
         int pageNumber = offset / POSTS_ON_PAGE;
         switch (mode) {
-            case "recent": {
+            case "recent" -> {
                 Sort dateSort = Sort.by(Sort.Direction.DESC, "time");
                 Pageable page = PageRequest.of(pageNumber, limit, dateSort);
                 posts = postsRepository.findAllByIsActiveAndModerationStatus(page);
-                break;
             }
-            case "popular": {
+            case "popular" -> {
                 Pageable page = PageRequest.of(pageNumber, limit);
                 posts = postsRepository.findAllByPostCommentCount(page);
-                break;
             }
-            case "best": {
+            case "best" -> {
                 Pageable page = PageRequest.of(pageNumber, limit);
                 posts = postsRepository.findAllLikedPosts(page);
-                break;
             }
-            case "early": {
+            case "early" -> {
                 Sort dateSort = Sort.by(Sort.Direction.ASC, "time");
                 Pageable page = PageRequest.of(pageNumber, limit, dateSort);
                 posts = postsRepository.findAllByIsActiveAndModerationStatus(page);
-                break;
             }
         }
         List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
@@ -110,11 +110,14 @@ public class PostServiceImpl implements PostService {
     public PostsResponse getPostsByDate(int offset, int limit, String date) {
         PostsResponse postsResponse = new PostsResponse();
         int pageNumber = offset / POSTS_ON_PAGE;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDateTime dayStart = LocalDate.parse(date, formatter).atStartOfDay();
+        LocalDateTime dayEnd = dayStart.plusDays(1);
         Pageable page = PageRequest.of(pageNumber, limit);
-        List<PostDTO> postDTOs = postsRepository.findPostsByIsActiveAndModerationStatusAndTime(date, page)
+        List<PostDTO> postDTOs = postsRepository.findPostsByIsActiveAndModerationStatusAndTime(dayStart, dayEnd, page)
                 .stream().map(postMapper::toDTO).collect(Collectors.toList());
         postsResponse.setPosts(postDTOs);
-        postsResponse.setCount(countPostsByDate(date));
+        postsResponse.setCount(countPostsByDate(dayStart, dayEnd));
         return postsResponse;
     }
 
@@ -156,21 +159,21 @@ public class PostServiceImpl implements PostService {
         List<Post> posts = new ArrayList<>();
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
-        int count = 0;
-        switch (status) {
-            case "new":
-                posts = postsRepository.findPostByModerationStatus(ModerationStatus.NEW.toString(), page);
-                count = postsRepository.countPostsByModerationStatus(ModerationStatus.NEW.toString());
-                break;
-            case "declined":
-                posts = postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED.toString(), page);
-                count = postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED.toString());
-                break;
-            case "accepted":
-                posts = postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED.toString(), page);
-                count = postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED.toString());
-                break;
-        }
+        int count = switch (status) {
+            case "new" -> {
+                posts = postsRepository.findPostByModerationStatus(ModerationStatus.NEW, page);
+                yield postsRepository.countPostsByModerationStatus(ModerationStatus.NEW);
+            }
+            case "declined" -> {
+                posts = postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED, page);
+                yield postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED);
+            }
+            case "accepted" -> {
+                posts = postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED, page);
+                yield postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED);
+            }
+            default -> 0;
+        };
         List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
         postsResponse.setPosts(postDTOs);
         postsResponse.setCount(count);
@@ -189,30 +192,30 @@ public class PostServiceImpl implements PostService {
     public PostsResponse getMyPosts(int offset, int limit, String status) {
         PostsResponse postsResponse = new PostsResponse();
         List<Post> posts = new ArrayList<>();
-        int count = 0;
         int pageNumber = offset / POSTS_ON_PAGE;
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email = user.getUsername();
         main.model.User currentUser = usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not fount"));
         Pageable page = PageRequest.of(pageNumber, limit);
-        switch (status) {
-            case "inactive":
+        int count = switch (status) {
+            case "inactive" -> {
                 posts = postsRepository.findPostsByUserAndIsActive(currentUser, (byte) 0, page);
-                count = postsRepository.countPostsByUserAndIsActive(currentUser, (byte) 0);
-                break;
-            case "pending":
+                yield postsRepository.countPostsByUserAndIsActive(currentUser, (byte) 0);
+            }
+            case "pending" -> {
                 posts = postsRepository.findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.NEW, page);
-                count = postsRepository.countPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.NEW);
-                break;
-            case "declined":
+                yield postsRepository.countPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.NEW);
+            }
+            case "declined" -> {
                 posts = postsRepository.findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.DECLINED, page);
-                count = postsRepository.countPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.DECLINED);
-                break;
-            case "published":
+                yield postsRepository.countPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.DECLINED);
+            }
+            case "published" -> {
                 posts = postsRepository.findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.ACCEPTED, page);
-                count = postsRepository.countPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.ACCEPTED);
-                break;
-        }
+                yield postsRepository.countPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.ACCEPTED);
+            }
+            default -> 0;
+        };
         postsResponse.setPosts(posts.stream().map(postMapper::toDTO).collect(Collectors.toList()));
         postsResponse.setCount(count);
         return postsResponse;
@@ -238,7 +241,7 @@ public class PostServiceImpl implements PostService {
             PostVote newPostVote = new PostVote();
             newPostVote.setPost(post);
             newPostVote.setUser(currentUser);
-            newPostVote.setTime(new Date());
+            newPostVote.setTime(LocalDateTime.now());
             newPostVote.setValue((byte) 1);
             postVotesRepository.save(newPostVote);
             resultResponse.setResult(true);
@@ -259,7 +262,7 @@ public class PostServiceImpl implements PostService {
             PostVote newPostVote = new PostVote();
             newPostVote.setPost(post);
             newPostVote.setUser(currentUser);
-            newPostVote.setTime(new Date());
+            newPostVote.setTime(LocalDateTime.now());
             newPostVote.setValue((byte) -1);
             postVotesRepository.save(newPostVote);
             resultResponse.setResult(true);
@@ -287,9 +290,9 @@ public class PostServiceImpl implements PostService {
         Optional<Post> post = postsRepository.findById(moderationRequest.getPostId());
         main.model.User moderator = getAuthUser();
         if (moderationRequest.getDecision().equals("accept")) {
-            postsRepository.updateModerationStatus("ACCEPTED", moderator.getId(), post.get().getId());
+            postsRepository.updateModerationStatus(ModerationStatus.ACCEPTED, moderator.getId(), post.get().getId());
         } else if (moderationRequest.getDecision().equals("decline")) {
-            postsRepository.updateModerationStatus("DECLINED", moderator.getId(), post.get().getId());
+            postsRepository.updateModerationStatus(ModerationStatus.DECLINED, moderator.getId(), post.get().getId());
         }
         resultResponse.setResult(true);
         return resultResponse;
@@ -347,10 +350,10 @@ public class PostServiceImpl implements PostService {
             } else {
                 post.setModerationStatus(ModerationStatus.ACCEPTED);
             }
-            if (postRequest.getTimestamp() <= new Date().getTime()) {
-                post.setTime(new Date());
+            if (postRequest.getTimestamp() <= Timestamp.valueOf(LocalDateTime.now()).getTime()) {
+                post.setTime(LocalDateTime.now());
             } else {
-                post.setTime(new Date(postRequest.getTimestamp()));
+                post.setTime(new Timestamp(postRequest.getTimestamp()).toLocalDateTime());
             }
             errorsResponse.setResult(true);
             postsRepository.save(post);
@@ -397,8 +400,8 @@ public class PostServiceImpl implements PostService {
         return postsRepository.countPostsByIsActiveAndModerationStatusAndTextLike(query);
     }
 
-    private int countPostsByDate(String date) {
-        return postsRepository.countPostsByIsActiveAndModerationStatusAndTime(date);
+    private int countPostsByDate(LocalDateTime dateFrom, LocalDateTime dateTo) {
+        return postsRepository.countPostsByIsActiveAndModerationStatusAndTime(dateFrom, dateTo);
     }
 
     private int countPostsByTag(String tag) {

@@ -8,7 +8,9 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
+
+import java.sql.Timestamp;
 import java.util.stream.Collectors;
 
 @Component
@@ -49,7 +51,7 @@ public class CurrentPostMapper extends AbstractMapper<Post, CurrentPostDTO> {
         destination.setDislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count());
         destination.setComments(post.getComments().stream()
                 .map(postCommentMapper::toDTO).collect(Collectors.toList()));
-        destination.setTimestamp(post.getTime().getTime() / SECOND);
+        destination.setTimestamp(Timestamp.valueOf(post.getTime()).getTime() / SECOND);
         destination.setTags(post.getTags().stream().map(Tag::getName).collect(Collectors.toList()));
     }
 }

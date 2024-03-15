@@ -2,11 +2,12 @@ package main.model;
 
 import main.model.enums.Role;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
-import java.util.Date;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
@@ -15,7 +16,7 @@ public class User extends AbstractEntity {
     public User() {
     }
 
-    public User(byte isModerator, Date regTime, String name, String email, String password, String code, String photo) {
+    public User(byte isModerator, LocalDateTime regTime, String name, String email, String password, String code, String photo) {
         this.isModerator = isModerator;
         this.regTime = regTime;
         this.name = name;
@@ -31,7 +32,7 @@ public class User extends AbstractEntity {
 
     @Column(name = "reg_time")
     @NotNull
-    private Date regTime;
+    private LocalDateTime regTime;
 
     @Column(name = "name")
     @NotNull
@@ -63,11 +64,11 @@ public class User extends AbstractEntity {
         this.isModerator = isModerator;
     }
 
-    public Date getRegTime() {
+    public LocalDateTime getRegTime() {
         return regTime;
     }
 
-    public void setRegTime(Date regTime) {
+    public void setRegTime(LocalDateTime regTime) {
         this.regTime = regTime;
     }
 

@@ -92,9 +92,9 @@ public class PostServiceImplTest {
     public void getPostsShouldReturnSortedListByTimeDescending() {
         PostsResponse expected = new PostsResponse();
         posts.sort(((o1, o2) -> {
-            if (o1.getTime().after(o2.getTime())) {
+            if (o1.getTime().isAfter(o2.getTime())) {
                 return 1;
-            } else if (o1.getTime().before(o2.getTime())) {
+            } else if (o1.getTime().isBefore(o2.getTime())) {
                 return -1;
             } else {
                 return 0;
@@ -149,9 +149,9 @@ public class PostServiceImplTest {
     public void getPostsShouldReturnSortedListByTimeAscending() {
         PostsResponse expected = new PostsResponse();
         posts.sort(((o1, o2) -> {
-            if (o1.getTime().before(o2.getTime())) {
+            if (o1.getTime().isBefore(o2.getTime())) {
                 return 1;
-            } else if (o1.getTime().after(o2.getTime())) {
+            } else if (o1.getTime().isAfter(o2.getTime())) {
                 return -1;
             } else {
                 return 0;
@@ -173,8 +173,8 @@ public class PostServiceImplTest {
         postDTOS = newPosts.stream().map(mapper::toDTO).collect(Collectors.toList());
         expected.setPosts(postDTOS);
         expected.setCount(10);
-        Mockito.when(postsRepository.findPostByModerationStatus(ModerationStatus.NEW.toString(), PageRequest.of(0, 10))).thenReturn(newPosts);
-        Mockito.when(postsRepository.countPostsByModerationStatus(ModerationStatus.NEW.toString())).thenReturn(10);
+        Mockito.when(postsRepository.findPostByModerationStatus(ModerationStatus.NEW, PageRequest.of(0, 10))).thenReturn(newPosts);
+        Mockito.when(postsRepository.countPostsByModerationStatus(ModerationStatus.NEW)).thenReturn(10);
 
         PostsResponse actual = postService.getModerationPosts(0, 10, "new");
         Assertions.assertEquals(expected, actual);
@@ -187,8 +187,8 @@ public class PostServiceImplTest {
         postDTOS = acceptedPosts.stream().map(mapper::toDTO).collect(Collectors.toList());
         expected.setPosts(postDTOS);
         expected.setCount(10);
-        Mockito.when(postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED.toString(), PageRequest.of(0, 10))).thenReturn(acceptedPosts);
-        Mockito.when(postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED.toString())).thenReturn(10);
+        Mockito.when(postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED, PageRequest.of(0, 10))).thenReturn(acceptedPosts);
+        Mockito.when(postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED)).thenReturn(10);
 
         PostsResponse actual = postService.getModerationPosts(0, 10, "accepted");
         Assertions.assertEquals(expected, actual);
@@ -201,8 +201,8 @@ public class PostServiceImplTest {
         postDTOS = declinedPosts.stream().map(mapper::toDTO).collect(Collectors.toList());
         expected.setPosts(postDTOS);
         expected.setCount(10);
-        Mockito.when(postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED.toString(), PageRequest.of(0, 10))).thenReturn(declinedPosts);
-        Mockito.when(postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED.toString())).thenReturn(10);
+        Mockito.when(postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED, PageRequest.of(0, 10))).thenReturn(declinedPosts);
+        Mockito.when(postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED)).thenReturn(10);
 
         PostsResponse actual = postService.getModerationPosts(0, 10, "declined");
         Assertions.assertEquals(expected, actual);

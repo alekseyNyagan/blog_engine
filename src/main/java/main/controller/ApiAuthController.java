@@ -1,5 +1,6 @@
 package main.controller;
 
+import jakarta.servlet.http.HttpServletResponse;
 import main.api.request.LoginRequest;
 import main.api.request.PasswordRequest;
 import main.api.request.RegistrationRequest;
@@ -16,8 +17,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 
 @RestController
@@ -53,8 +54,10 @@ public class ApiAuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest) {
-        return ResponseEntity.ok(usersService.login(loginRequest));
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest
+            , HttpServletRequest request
+            , HttpServletResponse response) {
+        return ResponseEntity.ok(usersService.login(loginRequest, request, response));
     }
 
     @GetMapping("/logout")

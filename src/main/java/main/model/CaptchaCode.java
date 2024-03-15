@@ -1,10 +1,11 @@
 package main.model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
-import java.util.Date;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "captcha_codes")
@@ -12,7 +13,7 @@ public class CaptchaCode extends AbstractEntity {
 
     @Column(name = "time")
     @NotNull
-    private Date time;
+    private LocalDateTime time;
 
     @Column(name = "code")
     @NotNull
@@ -22,11 +23,11 @@ public class CaptchaCode extends AbstractEntity {
     @NotNull
     private String secretCode;
 
-    public Date getTime() {
+    public LocalDateTime getTime() {
         return time;
     }
 
-    public void setTime(Date time) {
+    public void setTime(LocalDateTime time) {
         this.time = time;
     }
 

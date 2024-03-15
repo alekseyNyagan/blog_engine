@@ -13,8 +13,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.Date;
 
 @Service
 public class CaptchaCodeServiceImpl implements CaptchaCodeService {
@@ -38,7 +38,7 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
             String secretCode = cage.getTokenGenerator().next();
             captchaCode.setCode(code);
             captchaCode.setSecretCode(secretCode);
-            captchaCode.setTime(new Date());
+            captchaCode.setTime(LocalDateTime.now());
             captchaCodeRepository.save(captchaCode);
             BufferedImage bufferedImage = resizeImage(cage.drawImage(code));
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();

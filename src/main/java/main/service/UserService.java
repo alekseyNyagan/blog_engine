@@ -1,29 +1,30 @@
 package main.service;
 
+import jakarta.servlet.http.HttpServletResponse;
 import main.api.request.*;
 import main.api.response.*;
 import main.model.User;
 
-import javax.mail.MessagingException;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
 public interface UserService {
-    public ErrorsResponse addUser(RegistrationRequest registrationRequest);
+    ErrorsResponse addUser(RegistrationRequest registrationRequest);
 
-    public LoginResponse login(LoginRequest loginRequest);
+    LoginResponse login(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response);
 
-    public LoginResponse check(String email);
+    LoginResponse check(String email);
 
-    public ResultResponse logout();
+    ResultResponse logout();
 
-    public User getUser();
+    User getUser();
 
-    public ErrorsResponse updateUser(UpdateProfileRequest updateProfileRequest);
+    ErrorsResponse updateUser(UpdateProfileRequest updateProfileRequest);
 
-    public ErrorsResponse updateUserWithPhoto(UpdateProfileRequest updateProfileRequest) throws IOException;
+    ErrorsResponse updateUserWithPhoto(UpdateProfileRequest updateProfileRequest) throws IOException;
 
-    public ResultResponse restore(RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException;
+    ResultResponse restore(RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException;
 
-    public ErrorsResponse password(PasswordRequest passwordRequest);
+    ErrorsResponse password(PasswordRequest passwordRequest);
 }

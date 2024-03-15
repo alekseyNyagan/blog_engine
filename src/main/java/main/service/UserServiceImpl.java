@@ -1,5 +1,6 @@
 package main.service;
 
+import jakarta.servlet.http.HttpServletResponse;
 import main.api.request.*;
 import main.api.response.*;
 import main.error.*;
@@ -9,26 +10,29 @@ import main.model.User;
 import main.repository.CaptchaCodeRepository;
 import main.repository.UsersRepository;
 import org.apache.tomcat.util.codec.binary.Base64;
-import org.apache.tomcat.util.codec.binary.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.internet.MimeMessage;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.servlet.http.HttpServletRequest;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Service
@@ -43,6 +47,7 @@ public class UserServiceImpl implements UserService {
     private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final JavaMailSender javaMailSender;
+    private final SecurityContextRepository contextRepository;
 
     @Autowired
     public UserServiceImpl(UsersRepository usersRepository, CaptchaCodeRepository captchaCodeRepository, UserMapper mapper,
@@ -53,6 +58,7 @@ public class UserServiceImpl implements UserService {
         this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
         this.javaMailSender = javaMailSender;
+        this.contextRepository = new HttpSessionSecurityContextRepository();
     }
 
     @Override
@@ -67,7 +73,7 @@ public class UserServiceImpl implements UserService {
             user.setEmail(registrationRequest.getEmail());
             user.setName(registrationRequest.getName());
             user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
-            user.setRegTime(new Date());
+            user.setRegTime(LocalDateTime.now());
             usersRepository.save(user);
             errorsResponse.setResult(true);
         } else {
@@ -85,11 +91,14 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public LoginResponse login(LoginRequest loginRequest) {
+    public LoginResponse login(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
         Authentication auth = authenticationManager
                 .authenticate(
                         new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        context.setAuthentication(auth);
+        SecurityContextHolder.setContext(context);
+        contextRepository.saveContext(context, request, response);
         org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) auth.getPrincipal();
         return getLoginResponse(user.getUsername());
     }
@@ -149,7 +158,7 @@ public class UserServiceImpl implements UserService {
             BufferedImage resizedImage = resizeImage(bufferedImage);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ImageIO.write(resizedImage, "png", outputStream);
-            String photo = "data:image/png;base64," + StringUtils.newStringUtf8(Base64.encodeBase64(outputStream.toByteArray()));
+            String photo = "data:image/png;base64," + Base64.encodeBase64String(outputStream.toByteArray());
             if (updateProfileRequest.getPassword() == null) {
                 user.setName(updateProfileRequest.getName());
                 user.setEmail(updateProfileRequest.getEmail());
@@ -201,9 +210,10 @@ public class UserServiceImpl implements UserService {
             errorsResponse.setResult(true);
         } else {
             if (user.isEmpty()) {
-                UserCodeError userCodeError = new UserCodeError("Ссылка для восстановления пароля устарела.\n" +
-                        "<a href=\n" +
-                        "\\\"/auth/restore\\\">Запросить ссылку снова</a>");
+                UserCodeError userCodeError = new UserCodeError("""
+                        Ссылка для восстановления пароля устарела.
+                        <a href=
+                        \\"/auth/restore\\">Запросить ссылку снова</a>""");
                 errors.put(userCodeError, userCodeError.getMessage());
             }
             if (!captchaCode.getCode().equals(passwordRequest.getCaptcha())) {
@@ -225,7 +235,7 @@ public class UserServiceImpl implements UserService {
         return loginResponse;
     }
 
-    private BufferedImage resizeImage(BufferedImage originalImage) throws IOException {
+    private BufferedImage resizeImage(BufferedImage originalImage) {
         BufferedImage resizedImage = new BufferedImage(36, 36, BufferedImage.TYPE_INT_RGB);
         Graphics2D graphics2D = resizedImage.createGraphics();
         graphics2D.drawImage(originalImage, 0, 0, 36, 36, null);

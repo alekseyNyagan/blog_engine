@@ -1,13 +1,14 @@
 package main.model;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.JoinColumn;
-import javax.persistence.ManyToOne;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
-import java.util.Date;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "post_votes")
@@ -25,7 +26,7 @@ public class PostVote extends AbstractEntity {
 
     @Column(name = "time")
     @NotNull
-    private Date time;
+    private LocalDateTime time;
 
     @Column(name = "value")
     @NotNull
@@ -47,11 +48,11 @@ public class PostVote extends AbstractEntity {
         this.post = post;
     }
 
-    public Date getTime() {
+    public LocalDateTime getTime() {
         return time;
     }
 
-    public void setTime(Date time) {
+    public void setTime(LocalDateTime time) {
         this.time = time;
     }
 

@@ -7,7 +7,9 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
+
+import java.sql.Timestamp;
 
 @Component
 public class PostCommentMapper extends AbstractMapper<PostComment, PostCommentDTO> {
@@ -31,6 +33,6 @@ public class PostCommentMapper extends AbstractMapper<PostComment, PostCommentDT
 
     @Override
     public void mapSpecificFields(PostComment source, PostCommentDTO destination) {
-        destination.setTimestamp(postCommentsRepository.findById(source.getId()).get().getTime().getTime() / SECOND);
+        destination.setTimestamp(Timestamp.valueOf(postCommentsRepository.findById(source.getId()).get().getTime()).getTime() / SECOND);
     }
 }

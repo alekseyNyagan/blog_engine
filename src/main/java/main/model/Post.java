@@ -3,19 +3,20 @@ package main.model;
 
 import main.model.enums.ModerationStatus;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.Table;
-import javax.validation.constraints.NotNull;
-import java.util.Date;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotNull;
+
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -25,7 +26,7 @@ public class Post extends AbstractEntity {
     public Post() {
     }
 
-    public Post(byte isActive, ModerationStatus moderationStatus, Integer moderatorId, User user, Date time, String title,
+    public Post(byte isActive, ModerationStatus moderationStatus, Integer moderatorId, User user, LocalDateTime time, String title,
                 String text, int viewCount, List<PostComment> comments, List<PostVote> votes, List<Tag> tags) {
         this.isActive = isActive;
         this.moderationStatus = moderationStatus;
@@ -59,7 +60,7 @@ public class Post extends AbstractEntity {
 
     @Column(name = "time")
     @NotNull
-    private Date time;
+    private LocalDateTime time;
 
     @Column(name = "title")
     @NotNull
@@ -119,11 +120,11 @@ public class Post extends AbstractEntity {
         this.user = user;
     }
 
-    public Date getTime() {
+    public LocalDateTime getTime() {
         return time;
     }
 
-    public void setTime(Date time) {
+    public void setTime(LocalDateTime time) {
         this.time = time;
     }
 

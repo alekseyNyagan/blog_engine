@@ -7,7 +7,9 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
+
+import java.sql.Timestamp;
 
 @Component
 public class PostMapper extends AbstractMapper<Post, PostDTO> {
@@ -43,7 +45,7 @@ public class PostMapper extends AbstractMapper<Post, PostDTO> {
         destination.setLikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count());
         destination.setDislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count());
         destination.setCommentCount(post.getComments().size());
-        destination.setTimestamp(post.getTime().getTime() / SECOND);
+        destination.setTimestamp(Timestamp.valueOf(post.getTime()).getTime() / SECOND);
         destination.setAnnounce(text.length() < ANNOUNCE_LENGTH ? text.replaceAll(htmlTagRegex, "")
                 : text.replaceAll(htmlTagRegex, "").replace("&nbsp;"," ").substring(0, ANNOUNCE_LENGTH) + "...");
     }

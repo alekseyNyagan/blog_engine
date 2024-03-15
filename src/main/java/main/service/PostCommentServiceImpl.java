@@ -17,7 +17,7 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -53,7 +53,7 @@ public class PostCommentServiceImpl implements PostCommentService {
                     (parentPostComment.isPresent())) {
                 postComment.setPost(post.get());
                 postComment.setUser(currentUser);
-                postComment.setTime(new Date());
+                postComment.setTime(LocalDateTime.now());
                 postComment.setText(text);
                 postComment.setParentID((Integer) commentRequest.getParentId());
                 postCommentsRepository.save(postComment);
@@ -67,7 +67,7 @@ public class PostCommentServiceImpl implements PostCommentService {
             if (text.replaceAll(htmlTagRegexp, "").length() > 50 && post.isPresent()) {
                 postComment.setPost(post.get());
                 postComment.setUser(currentUser);
-                postComment.setTime(new Date());
+                postComment.setTime(LocalDateTime.now());
                 postComment.setText(text);
                 postCommentsRepository.save(postComment);
                 commentResponse.setId(postComment.getId());

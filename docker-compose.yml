@@ -21,7 +21,7 @@ services:
       - GMAIL_PASSWORD=
 
   db:
-    image: mysql:8.0.25
+    image: mysql:8.0.33
     container_name: db
     environment:
       - MYSQL_ROOT_PASSWORD=testtest
@@ -42,4 +42,4 @@ services:
       - FLYWAY_SCHEMAS=blog_engine
     command: -locations=filesystem:/flyway/sql -connectRetries=60 migrate
     volumes:
-     - $PWD/src/main/resources/db/migration:/flyway/sql
+     - ./src/main/resources/db/migration:/flyway/sql

@@ -1,4 +1,4 @@
-FROM adoptopenjdk:11-jre-hotspot
+FROM openjdk:21-jdk-oracle
 ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} application.jar
 EXPOSE 8080

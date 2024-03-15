@@ -9,7 +9,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 
 @Component
 public class UserMapper extends AbstractMapper<User, UserDTO>{
@@ -36,6 +36,6 @@ public class UserMapper extends AbstractMapper<User, UserDTO>{
     void mapSpecificFields(User source, UserDTO destination) {
         boolean isModerator = usersRepository.findUserById(source.getId()).isModerator() == 1;
         destination.setSettings(isModerator);
-        destination.setModerationCount(isModerator ? postsRepository.countPostsByModerationStatus(ModerationStatus.NEW.toString()) : 0);
+        destination.setModerationCount(isModerator ? postsRepository.countPostsByModerationStatus(ModerationStatus.NEW) : 0);
     }
 }
