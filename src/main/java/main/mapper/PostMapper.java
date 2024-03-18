@@ -40,13 +40,13 @@ public class PostMapper extends AbstractMapper<Post, PostDTO> {
     public void mapSpecificFields(Post source, PostDTO destination) {
         Post post = postsRepository.findById(source.getId()).get();
         String text = post.getText();
-        String htmlTagRegex = "\\<.*?\\>";
+        String textWithoutHtmlTags = text.replaceAll("<.*?>", "");
         destination.setUser(userMapper.toDTO(source.getUser()));
         destination.setLikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count());
         destination.setDislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count());
         destination.setCommentCount(post.getComments().size());
         destination.setTimestamp(Timestamp.valueOf(post.getTime()).getTime() / SECOND);
-        destination.setAnnounce(text.length() < ANNOUNCE_LENGTH ? text.replaceAll(htmlTagRegex, "")
-                : text.replaceAll(htmlTagRegex, "").replace("&nbsp;"," ").substring(0, ANNOUNCE_LENGTH) + "...");
+        destination.setAnnounce(textWithoutHtmlTags.length() < ANNOUNCE_LENGTH ? textWithoutHtmlTags
+                : textWithoutHtmlTags.replace("&nbsp;"," ").substring(0, ANNOUNCE_LENGTH) + "...");
     }
 }

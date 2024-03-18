@@ -143,7 +143,7 @@ public class PostServiceImpl implements PostService {
                 main.model.User currentUser = usersRepository
                         .findUserByEmail(user.getUsername())
                         .orElseThrow(() -> new UsernameNotFoundException("user" + user.getUsername() + "not found"));
-                if (!post.get().getUser().equals(currentUser) && currentUser.isModerator() != 1) {
+                if (!post.get().getUser().equals(currentUser) && currentUser.getIsModerator() != 1) {
                     postsRepository.incrementViewCount(id);
                 }
             }
@@ -342,7 +342,7 @@ public class PostServiceImpl implements PostService {
                 post.setId(id);
             }
             if (postPremoderation) {
-                if (currentUser.isModerator() != 1) {
+                if (currentUser.getIsModerator() != 1) {
                     post.setModerationStatus(ModerationStatus.NEW);
                 } else {
                     post.setModerationStatus(ModerationStatus.ACCEPTED);

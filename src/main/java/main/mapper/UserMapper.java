@@ -34,7 +34,7 @@ public class UserMapper extends AbstractMapper<User, UserDTO>{
 
     @Override
     void mapSpecificFields(User source, UserDTO destination) {
-        boolean isModerator = usersRepository.findUserById(source.getId()).isModerator() == 1;
+        boolean isModerator = usersRepository.findUserById(source.getId()).getIsModerator() == 1;
         destination.setSettings(isModerator);
         destination.setModerationCount(isModerator ? postsRepository.countPostsByModerationStatus(ModerationStatus.NEW) : 0);
     }

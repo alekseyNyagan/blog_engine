@@ -80,7 +80,7 @@ public class ApiGeneralController {
 
     @GetMapping("/statistics/all")
     public ResponseEntity<StatisticsResponse> getAllStatistic() {
-        if (!globalSettingsService.getGlobalSettings().isMultiuserMode() && userService.getUser().isModerator() != 1) {
+        if (!globalSettingsService.getGlobalSettings().isMultiuserMode() && userService.getUser().getIsModerator() != 1) {
             return ResponseEntity.status(401).build();
         } else {
             return ResponseEntity.ok(postService.getAllStatistic());

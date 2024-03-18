@@ -1,6 +1,7 @@
 package main.model;
 
 
+import lombok.*;
 import main.model.enums.ModerationStatus;
 
 import jakarta.persistence.CascadeType;
@@ -18,28 +19,14 @@ import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+@Setter
+@Getter
+@AllArgsConstructor
+@NoArgsConstructor
+@ToString
 @Entity
 @Table(name = "posts")
 public class Post extends AbstractEntity {
-
-    public Post() {
-    }
-
-    public Post(byte isActive, ModerationStatus moderationStatus, Integer moderatorId, User user, LocalDateTime time, String title,
-                String text, int viewCount, List<PostComment> comments, List<PostVote> votes, List<Tag> tags) {
-        this.isActive = isActive;
-        this.moderationStatus = moderationStatus;
-        this.moderatorId = moderatorId;
-        this.user = user;
-        this.time = time;
-        this.title = title;
-        this.text = text;
-        this.viewCount = viewCount;
-        this.comments = comments;
-        this.votes = votes;
-        this.tags = tags;
-    }
 
     @Column(name = "is_active")
     @NotNull
@@ -75,9 +62,11 @@ public class Post extends AbstractEntity {
     private int viewCount;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "post")
+    @ToString.Exclude
     private List<PostComment> comments;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "post")
+    @ToString.Exclude
     private List<PostVote> votes;
 
     @ManyToMany(cascade = CascadeType.ALL)
@@ -86,95 +75,6 @@ public class Post extends AbstractEntity {
             , joinColumns = @JoinColumn(name = "post_id")
             , inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
+    @ToString.Exclude
     private List<Tag> tags;
-
-    public byte getIsActive() {
-        return isActive;
-    }
-
-    public void setIsActive(byte isActive) {
-        this.isActive = isActive;
-    }
-
-    public ModerationStatus getModerationStatus() {
-        return moderationStatus;
-    }
-
-    public void setModerationStatus(ModerationStatus moderationStatus) {
-        this.moderationStatus = moderationStatus;
-    }
-
-    public int getModeratorId() {
-        return moderatorId;
-    }
-
-    public void setModeratorId(int moderatorId) {
-        this.moderatorId = moderatorId;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
-    }
-
-    public LocalDateTime getTime() {
-        return time;
-    }
-
-    public void setTime(LocalDateTime time) {
-        this.time = time;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getText() {
-        return text;
-    }
-
-    public void setText(String text) {
-        this.text = text;
-    }
-
-    public int getViewCount() {
-        return viewCount;
-    }
-
-    public void setViewCount(int viewCount) {
-        this.viewCount = viewCount;
-    }
-
-    public List<PostComment> getComments() {
-        return comments;
-    }
-
-    public void setComments(List<PostComment> comments) {
-        this.comments = comments;
-    }
-
-    public List<PostVote> getVotes() {
-        return votes;
-    }
-
-    public void setVotes(List<PostVote> votes) {
-        this.votes = votes;
-    }
-
-    public List<Tag> getTags() {
-        return tags;
-    }
-
-    public void setTags(List<Tag> tags) {
-        this.tags = tags;
-    }
-
-
 }
