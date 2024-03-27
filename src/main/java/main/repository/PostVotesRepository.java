@@ -14,10 +14,10 @@ import java.util.Optional;
 
 @Repository
 public interface PostVotesRepository extends JpaRepository<PostVote, Integer> {
-    public Optional<PostVote> findPostVoteByUserAndPost(User user, Post post);
+    Optional<PostVote> findPostVoteByUserAndPost(User user, Post post);
 
     @Transactional
     @Modifying
-    @Query(nativeQuery = true, value = "UPDATE post_votes SET value = :value WHERE user_id = :user_id AND post_id = :post_id")
-    public void updatePostVote(@Param("value") int value, @Param("user_id") int userId, @Param("post_id") int postId);
+    @Query(value = "UPDATE PostVote pv SET pv.value = :value WHERE pv.user = :user AND pv.post = :post")
+    void updatePostVote(@Param("value") int value, @Param("user") User user, @Param("post") Post post);
 }

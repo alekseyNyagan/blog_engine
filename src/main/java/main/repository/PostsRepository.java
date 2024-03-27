@@ -67,7 +67,6 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
             """)
     List<Post> findPostsByIsActiveAndModerationStatusAndTextLike(@Param("text") String text, Pageable pageable);
 
-    //@Query(nativeQuery = true, value = "SELECT * FROM posts WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND DATE(time) = :date")
     @Query(value = """
             SELECT p FROM Post p
             WHERE p.isActive = 1
@@ -96,7 +95,7 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
             AND p.time <= CURRENT_TIME
             GROUP BY FUNCTION('YEAR', p.time)
             """)
-    List<Integer> findYearsByPostCount();
+    List<Integer> findYearsWithCreatedPosts();
 
     @Query(value = """
             SELECT FUNCTION('DATE_FORMAT', p.time, '%Y-%m-%d') AS date, COUNT(p.id) AS count FROM Post p
@@ -142,21 +141,25 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
 
     List<Post> findPostsByUserAndIsActiveAndModerationStatus(User user, byte isActive, ModerationStatus moderationStatus, Pageable pageable);
 
-    @Query(nativeQuery = true, value = "WITH post_temp AS (" +
-            "SELECT IFNULL(COUNT(id), 0) AS postsCount, IFNULL(SUM(view_count), 0) AS viewsCount, UNIX_TIMESTAMP(MIN(time)) AS firstPublication FROM posts " +
-            "WHERE user_id = :user_id AND is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= NOW()), " +
-            "post_votes_temp AS (" +
-            "SELECT IFNULL(SUM(IF(value = 1, 1, 0)), 0) AS likesCount, IFNULL(SUM(IF(value = -1, 1, 0)), 0) AS dislikesCount FROM post_votes WHERE user_id = :user_id)" +
-            "SELECT postsCount, viewsCount, firstPublication, likesCount, dislikesCount FROM post_temp JOIN post_votes_temp")
+    @Query(nativeQuery = true, value = """
+            WITH post_temp AS (
+            SELECT IFNULL(COUNT(id), 0) AS postsCount, IFNULL(SUM(view_count), 0) AS viewsCount, UNIX_TIMESTAMP(MIN(time)) AS firstPublication FROM posts
+            WHERE user_id = :user_id AND is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= NOW()),
+            post_votes_temp AS (
+            SELECT IFNULL(SUM(IF(value = 1, 1, 0)), 0) AS likesCount, IFNULL(SUM(IF(value = -1, 1, 0)), 0) AS dislikesCount FROM post_votes WHERE user_id = :user_id)
+            SELECT postsCount, viewsCount, firstPublication, likesCount, dislikesCount FROM post_temp JOIN post_votes_temp
+            """)
     StatisticsResponse getMyStatistic(@Param("user_id") int userId);
 
-    @Query(nativeQuery = true, value = "WITH post_temp AS (" +
-            "SELECT IFNULL(COUNT(id), 0) AS postsCount, IFNULL(SUM(view_count), 0) AS viewsCount, UNIX_TIMESTAMP(MIN(time)) AS firstPublication FROM posts " +
-            "WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= NOW()), " +
-            "post_votes_temp AS (" +
-            "SELECT IFNULL(SUM(IF(value = 1, 1, 0)), 0) AS likesCount, IFNULL(SUM(IF(value = -1, 1, 0)), 0) AS dislikesCount FROM post_votes " +
-            "JOIN posts p on post_votes.post_id = p.id WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND p.time <= NOW())" +
-            "SELECT postsCount, viewsCount, firstPublication, likesCount, dislikesCount FROM post_temp JOIN post_votes_temp")
+    @Query(nativeQuery = true, value = """
+            WITH post_temp AS (
+            SELECT IFNULL(COUNT(id), 0) AS postsCount, IFNULL(SUM(view_count), 0) AS viewsCount, UNIX_TIMESTAMP(MIN(time)) AS firstPublication FROM posts
+            WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= NOW()),
+            post_votes_temp AS (
+            SELECT IFNULL(SUM(IF(value = 1, 1, 0)), 0) AS likesCount, IFNULL(SUM(IF(value = -1, 1, 0)), 0) AS dislikesCount FROM post_votes
+            JOIN posts p on post_votes.post_id = p.id WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND p.time <= NOW())
+            SELECT postsCount, viewsCount, firstPublication, likesCount, dislikesCount FROM post_temp JOIN post_votes_temp
+            """)
     StatisticsResponse getAllStatistic();
 
     int countPostsByUserAndIsActive(User user, byte isActive);

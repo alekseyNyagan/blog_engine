@@ -12,17 +12,16 @@ import java.util.Optional;
 
 @Repository
 public interface UsersRepository extends JpaRepository<User, Integer> {
-    public User findUserById(int id);
-    public Optional<User> findUserByEmail(String email);
-    public Optional<User> findUserByCode(String code);
+    Optional<User> findUserByEmail(String email);
+    Optional<User> findUserByCode(String code);
 
     @Query(nativeQuery = true, value = "UPDATE users SET code = :code WHERE email = :email")
     @Transactional
     @Modifying
-    public void updateUserCode(@Param("code") String code, @Param("email") String email);
+    void updateUserCode(@Param("code") String code, @Param("email") String email);
 
     @Query(nativeQuery = true, value = "UPDATE users SET password = :password WHERE id = :id")
     @Transactional
     @Modifying
-    public void updatePassword(@Param("password") String password, @Param("id") int id);
+    void updatePassword(@Param("password") String password, @Param("id") int id);
 }

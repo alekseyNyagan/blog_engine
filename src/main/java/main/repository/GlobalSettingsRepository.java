@@ -10,10 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface GlobalSettingsRepository extends JpaRepository<GlobalSetting, Integer> {
-    public GlobalSetting findGlobalSettingByCode(String code);
 
     @Query(nativeQuery = true, value = "UPDATE global_settings SET value = :value WHERE code = :code")
     @Transactional
     @Modifying
-    public void updateSetting(@Param("value") String value, @Param("code") String code);
+    void updateSetting(@Param("value") String value, @Param("code") String code);
 }

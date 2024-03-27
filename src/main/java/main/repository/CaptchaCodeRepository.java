@@ -10,10 +10,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public interface CaptchaCodeRepository extends JpaRepository<CaptchaCode, Integer> {
-    public CaptchaCode findCaptchaCodeBySecretCode(String secreteCode);
+    CaptchaCode findCaptchaCodeBySecretCode(String secreteCode);
 
-    @Query(nativeQuery = true, value = "DELETE FROM captcha_codes WHERE time < DATE_SUB(time, INTERVAL :time HOUR)")
+    @Query(nativeQuery = true, value = "DELETE FROM captcha_codes WHERE time < DATE_SUB(NOW(), INTERVAL :time HOUR)")
     @Modifying
     @Transactional
-    public void deleteAllByTimeBefore(@Param("time") int time);
+    void deleteAllByTimeBefore(@Param("time") int time);
 }

@@ -183,7 +183,7 @@ public class PostServiceImpl implements PostService {
     @Override
     public CalendarResponse getCalendar(int year) {
         CalendarResponse calendarResponse = new CalendarResponse();
-        calendarResponse.setYears(postsRepository.findYearsByPostCount());
+        calendarResponse.setYears(postsRepository.findYearsWithCreatedPosts());
         calendarResponse.setPosts(postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarDTO::getDate, CalendarDTO::getCount)));
         return calendarResponse;
     }
@@ -246,7 +246,7 @@ public class PostServiceImpl implements PostService {
             postVotesRepository.save(newPostVote);
             resultResponse.setResult(true);
         } else if (postVote.get().getValue() == -1) {
-            postVotesRepository.updatePostVote((byte) 1, currentUser.getId(), post.getId());
+            postVotesRepository.updatePostVote((byte) 1, currentUser, post);
             resultResponse.setResult(true);
         }
         return resultResponse;
@@ -267,7 +267,7 @@ public class PostServiceImpl implements PostService {
             postVotesRepository.save(newPostVote);
             resultResponse.setResult(true);
         } else if (postVote.get().getValue() == 1) {
-            postVotesRepository.updatePostVote((byte) -1, currentUser.getId(), post.getId());
+            postVotesRepository.updatePostVote((byte) -1, currentUser, post);
             resultResponse.setResult(true);
         }
         return resultResponse;

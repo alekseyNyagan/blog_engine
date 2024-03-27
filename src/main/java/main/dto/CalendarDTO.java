@@ -1,7 +1,7 @@
 package main.dto;
 
 public interface CalendarDTO {
-    public String getDate();
+    String getDate();
 
-    public int getCount();
+    int getCount();
 }
