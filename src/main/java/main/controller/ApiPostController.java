@@ -3,7 +3,6 @@ package main.controller;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
-import main.exceptions.NoSuchPostException;
 import main.service.GlobalSettingsService;
 import main.service.PostServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api/post")
@@ -53,7 +54,7 @@ public class ApiPostController {
     public ResponseEntity getPostById(@PathVariable int id) {
         try {
             return ResponseEntity.status(HttpStatus.OK).body(postService.getPostById(id));
-        } catch (NoSuchPostException exception){
+        } catch (NoSuchElementException exception){
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
         }
     }

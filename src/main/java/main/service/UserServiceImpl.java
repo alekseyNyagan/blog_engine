@@ -3,7 +3,6 @@ package main.service;
 import jakarta.servlet.http.HttpServletResponse;
 import main.api.request.*;
 import main.api.response.*;
-import main.error.*;
 import main.mapper.UserMapper;
 import main.model.CaptchaCode;
 import main.model.User;
@@ -25,10 +24,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
+
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.servlet.http.HttpServletRequest;
+
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
@@ -64,27 +65,26 @@ public class UserServiceImpl implements UserService {
     @Override
     public ErrorsResponse addUser(RegistrationRequest registrationRequest) {
         ErrorsResponse errorsResponse = new ErrorsResponse();
-        Map<AbstractError, String> errors = new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
         boolean isEmailExist = usersRepository.findUserByEmail(registrationRequest.getEmail()).isPresent();
         boolean isCaptchaCodeEqual = captchaCodeRepository
                 .findCaptchaCodeBySecretCode(registrationRequest.getCaptchaSecret()).getCode().equals(registrationRequest.getCaptcha());
-        if (!isEmailExist && isCaptchaCodeEqual) {
-            User user = new User();
-            user.setEmail(registrationRequest.getEmail());
-            user.setName(registrationRequest.getName());
-            user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
-            user.setRegTime(LocalDateTime.now());
+        if (!isCaptchaCodeEqual) {
+            errors.put("captcha", "Код с картинки введён неверно");
+        }
+        if (isEmailExist) {
+            errors.put("email", "Этот e-mail уже зарегистрирован");
+        }
+        if (errors.isEmpty()) {
+            User user = new User((byte) 0
+                    , LocalDateTime.now()
+                    , registrationRequest.getName()
+                    , registrationRequest.getEmail()
+                    , registrationRequest.getPassword()
+                    , registrationRequest.getCaptchaSecret()
+                    , null);
             usersRepository.save(user);
             errorsResponse.setResult(true);
-        } else {
-            if (!isCaptchaCodeEqual) {
-                CaptchaError error = new CaptchaError();
-                errors.put(error, error.getMessage());
-            }
-            if (isEmailExist) {
-                EmailError error = new EmailError();
-                errors.put(error, error.getMessage());
-            }
         }
         errorsResponse.setErrors(errors);
         return errorsResponse;
@@ -110,15 +110,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public ResultResponse logout() {
-        ResultResponse resultResponse = new ResultResponse();
-        resultResponse.setResult(true);
-        SecurityContextHolder.getContext().setAuthentication(null);
-        return resultResponse;
+        SecurityContextHolder.clearContext();
+        return new ResultResponse(true);
     }
 
     @Override
     public User getUser() {
-        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        org.springframework.security.core.userdetails.User user = (org.springframework.security.core.userdetails.User)
+                SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email = user.getUsername();
         return usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not found"));
     }
@@ -127,21 +126,15 @@ public class UserServiceImpl implements UserService {
     public ErrorsResponse updateUser(UpdateProfileRequest updateProfileRequest) {
         ErrorsResponse errorsResponse = new ErrorsResponse();
         User user = getUser();
+        user.setName(updateProfileRequest.getName());
+        user.setEmail(updateProfileRequest.getEmail());
         if (updateProfileRequest.getRemovePhoto() == 1) {
             user.setPhoto(null);
-            user.setName(updateProfileRequest.getName());
-            user.setEmail(updateProfileRequest.getEmail());
-            usersRepository.save(user);
-        } else if (!(updateProfileRequest.getPassword() == null)) {
-            user.setName(updateProfileRequest.getName());
-            user.setEmail(updateProfileRequest.getEmail());
-            user.setPassword(passwordEncoder.encode(updateProfileRequest.getPassword()));
-            usersRepository.save(user);
-        } else {
-            user.setName(updateProfileRequest.getName());
-            user.setEmail(updateProfileRequest.getEmail());
-            usersRepository.save(user);
         }
+        if (updateProfileRequest.getPassword() != null) {
+            user.setPassword(passwordEncoder.encode(updateProfileRequest.getPassword()));
+        }
+        usersRepository.save(user);
         errorsResponse.setResult(true);
         return errorsResponse;
     }
@@ -149,7 +142,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public ErrorsResponse updateUserWithPhoto(UpdateProfileRequest updateProfileRequest) throws IOException {
         ErrorsResponse errorsResponse = new ErrorsResponse();
-        Map<AbstractError, String> errors = new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
         User user = getUser();
         MultipartFile multipartFile = (MultipartFile) updateProfileRequest.getPhoto();
         if (multipartFile.getSize() <= MAX_PHOTO_SIZE * MB) {
@@ -159,23 +152,16 @@ public class UserServiceImpl implements UserService {
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ImageIO.write(resizedImage, "png", outputStream);
             String photo = "data:image/png;base64," + Base64.encodeBase64String(outputStream.toByteArray());
-            if (updateProfileRequest.getPassword() == null) {
-                user.setName(updateProfileRequest.getName());
-                user.setEmail(updateProfileRequest.getEmail());
-                user.setPhoto(photo);
-                usersRepository.save(user);
-                errorsResponse.setResult(true);
-            } else {
-                user.setName(updateProfileRequest.getName());
-                user.setEmail(updateProfileRequest.getEmail());
-                user.setPhoto(photo);
+            user.setName(updateProfileRequest.getName());
+            user.setEmail(updateProfileRequest.getEmail());
+            user.setPhoto(photo);
+            if (updateProfileRequest.getPassword() != null) {
                 user.setPassword(passwordEncoder.encode(updateProfileRequest.getPassword()));
-                usersRepository.save(user);
-                errorsResponse.setResult(true);
             }
+            usersRepository.save(user);
+            errorsResponse.setResult(true);
         } else {
-            PhotoError photoError = new PhotoError("Размер фотографии превышает 5 МБ");
-            errors.put(photoError, photoError.getMessage());
+            errors.put("photo", "Размер фотографии превышает 5 МБ");
         }
         errorsResponse.setErrors(errors);
         return errorsResponse;
@@ -186,12 +172,14 @@ public class UserServiceImpl implements UserService {
         ResultResponse resultResponse = new ResultResponse();
         Optional<User> user = usersRepository.findUserByEmail(restoreRequest.getEmail());
         if (user.isPresent()) {
-            String hash = generateRandomHash(40);
+            String email = user.get().getEmail();
+            String hash = generateRandomHash();
             String domainName = httpServletRequest.getServerName();
-            usersRepository.updateUserCode(hash, user.get().getEmail());
+            usersRepository.updateUserCode(hash, email);
             MimeMessage message = javaMailSender.createMimeMessage();
-            message.addRecipients(Message.RecipientType.TO, user.get().getEmail());
-            message.setText("<HTML><body> Для восстановления пароля перейдите по ссылке <a href=\"http://" + domainName + "/login/change-password/" + hash + "\">" +
+            message.addRecipients(Message.RecipientType.TO, email);
+            message.setText("<HTML><body> Для восстановления пароля перейдите по ссылке <a href=\"http://"
+                    + domainName + "/login/change-password/" + hash + "\">" +
                     "/login/change-password/" + hash + "</a></body></HTML>", "UTF-8", "html");
             javaMailSender.send(message);
             resultResponse.setResult(true);
@@ -202,7 +190,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public ErrorsResponse password(PasswordRequest passwordRequest) {
         ErrorsResponse errorsResponse = new ErrorsResponse();
-        Map<AbstractError, String> errors = new HashMap<>();
+        Map<String, String> errors = new HashMap<>();
         Optional<User> user = usersRepository.findUserByCode(passwordRequest.getCode());
         CaptchaCode captchaCode = captchaCodeRepository.findCaptchaCodeBySecretCode(passwordRequest.getCaptchaSecret());
         if (user.isPresent() && captchaCode.getCode().equals(passwordRequest.getCaptcha())) {
@@ -210,15 +198,14 @@ public class UserServiceImpl implements UserService {
             errorsResponse.setResult(true);
         } else {
             if (user.isEmpty()) {
-                UserCodeError userCodeError = new UserCodeError("""
+                String message = """
                         Ссылка для восстановления пароля устарела.
                         <a href=
-                        \\"/auth/restore\\">Запросить ссылку снова</a>""");
-                errors.put(userCodeError, userCodeError.getMessage());
+                        \\"/auth/restore\\">Запросить ссылку снова</a>""";
+                errors.put("code", message);
             }
             if (!captchaCode.getCode().equals(passwordRequest.getCaptcha())) {
-                CaptchaError captchaError = new CaptchaError();
-                errors.put(captchaError, captchaError.getMessage());
+                errors.put("captcha", "Код с картинки введён неверно");
             }
         }
         errorsResponse.setErrors(errors);
@@ -229,10 +216,7 @@ public class UserServiceImpl implements UserService {
         main.model.User currentUser = usersRepository
                 .findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
-        LoginResponse loginResponse = new LoginResponse();
-        loginResponse.setResult(true);
-        loginResponse.setUserDTO(mapper.toDTO(currentUser));
-        return loginResponse;
+        return new LoginResponse(true, mapper.toDTO(currentUser));
     }
 
     private BufferedImage resizeImage(BufferedImage originalImage) {
@@ -243,11 +227,11 @@ public class UserServiceImpl implements UserService {
         return resizedImage;
     }
 
-    private String generateRandomHash(int length) {
+    private String generateRandomHash() {
         String chars = "0123456789abcdefghijklmnopqrstuvwxyz";
         Random rnd = new Random();
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++)
+        StringBuilder sb = new StringBuilder(40);
+        for (int i = 0; i < 40; i++)
             sb.append(chars.charAt(rnd.nextInt(chars.length())));
         return sb.toString();
     }

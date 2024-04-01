@@ -7,11 +7,6 @@ import main.api.response.*;
 import main.dto.CalendarDTO;
 import main.dto.CurrentPostDTO;
 import main.dto.PostDTO;
-import main.error.AbstractError;
-import main.error.ImageError;
-import main.error.TextError;
-import main.error.TitleError;
-import main.exceptions.NoSuchPostException;
 import main.mapper.CurrentPostMapper;
 import main.mapper.PostMapper;
 import main.model.Post;
@@ -65,7 +60,6 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostsResponse getPosts(int offset, int limit, String mode) {
-        PostsResponse postsResponse = new PostsResponse();
         List<Post> posts = new ArrayList<>();
         int pageNumber = offset / POSTS_ON_PAGE;
         switch (mode) {
@@ -89,26 +83,20 @@ public class PostServiceImpl implements PostService {
             }
         }
         List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
-        postsResponse.setPosts(postDTOs);
-        postsResponse.setCount(postCount());
-        return postsResponse;
+        return new PostsResponse(postCount(), postDTOs);
     }
 
     @Override
     public PostsResponse getPostsByQuery(int offset, int limit, String query) {
-        PostsResponse postsResponse = new PostsResponse();
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
         List<PostDTO> postDTOs = postsRepository.findPostsByIsActiveAndModerationStatusAndTextLike(query, page)
                 .stream().map(postMapper::toDTO).collect(Collectors.toList());
-        postsResponse.setPosts(postDTOs);
-        postsResponse.setCount(postCountByQuery(query));
-        return postsResponse;
+        return new PostsResponse(postCountByQuery(query), postDTOs);
     }
 
     @Override
     public PostsResponse getPostsByDate(int offset, int limit, String date) {
-        PostsResponse postsResponse = new PostsResponse();
         int pageNumber = offset / POSTS_ON_PAGE;
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         LocalDateTime dayStart = LocalDate.parse(date, formatter).atStartOfDay();
@@ -116,20 +104,15 @@ public class PostServiceImpl implements PostService {
         Pageable page = PageRequest.of(pageNumber, limit);
         List<PostDTO> postDTOs = postsRepository.findPostsByIsActiveAndModerationStatusAndTime(dayStart, dayEnd, page)
                 .stream().map(postMapper::toDTO).collect(Collectors.toList());
-        postsResponse.setPosts(postDTOs);
-        postsResponse.setCount(countPostsByDate(dayStart, dayEnd));
-        return postsResponse;
+        return new PostsResponse(countPostsByDate(dayStart, dayEnd), postDTOs);
     }
 
     @Override
     public PostsResponse getPostsByTag(int offset, int limit, String tag) {
-        PostsResponse postsResponse = new PostsResponse();
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
         List<PostDTO> postDTOs = postsRepository.findPostsByTag(tag, page).stream().map(postMapper::toDTO).collect(Collectors.toList());
-        postsResponse.setPosts(postDTOs);
-        postsResponse.setCount(countPostsByTag(tag));
-        return postsResponse;
+        return new PostsResponse(countPostsByTag(tag), postDTOs);
     }
 
     @Override
@@ -149,13 +132,12 @@ public class PostServiceImpl implements PostService {
             }
             return currentPostMapper.toDTO(post.get());
         } else {
-            throw new NoSuchPostException("Пост не найден");
+            throw new NoSuchElementException("Пост не найден");
         }
     }
 
     @Override
     public PostsResponse getModerationPosts(int offset, int limit, String status) {
-        PostsResponse postsResponse = new PostsResponse();
         List<Post> posts = new ArrayList<>();
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
@@ -175,9 +157,7 @@ public class PostServiceImpl implements PostService {
             default -> 0;
         };
         List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
-        postsResponse.setPosts(postDTOs);
-        postsResponse.setCount(count);
-        return postsResponse;
+        return new PostsResponse(count, postDTOs);
     }
 
     @Override
@@ -190,7 +170,6 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostsResponse getMyPosts(int offset, int limit, String status) {
-        PostsResponse postsResponse = new PostsResponse();
         List<Post> posts = new ArrayList<>();
         int pageNumber = offset / POSTS_ON_PAGE;
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -216,9 +195,7 @@ public class PostServiceImpl implements PostService {
             }
             default -> 0;
         };
-        postsResponse.setPosts(posts.stream().map(postMapper::toDTO).collect(Collectors.toList()));
-        postsResponse.setCount(count);
-        return postsResponse;
+        return new PostsResponse(count, posts.stream().map(postMapper::toDTO).collect(Collectors.toList()));
     }
 
     @Override
@@ -233,44 +210,12 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public ResultResponse like(PostVoteRequest postVoteRequest) {
-        ResultResponse resultResponse = new ResultResponse();
-        main.model.User currentUser = getAuthUser();
-        Post post = postsRepository.findById(postVoteRequest.getPostId()).get();
-        Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
-        if (postVote.isEmpty()) {
-            PostVote newPostVote = new PostVote();
-            newPostVote.setPost(post);
-            newPostVote.setUser(currentUser);
-            newPostVote.setTime(LocalDateTime.now());
-            newPostVote.setValue((byte) 1);
-            postVotesRepository.save(newPostVote);
-            resultResponse.setResult(true);
-        } else if (postVote.get().getValue() == -1) {
-            postVotesRepository.updatePostVote((byte) 1, currentUser, post);
-            resultResponse.setResult(true);
-        }
-        return resultResponse;
+       return createPostVote(postVoteRequest, (byte) 1, (byte) -1);
     }
 
     @Override
     public ResultResponse dislike(PostVoteRequest postVoteRequest) {
-        ResultResponse resultResponse = new ResultResponse();
-        main.model.User currentUser = getAuthUser();
-        Post post = postsRepository.findById(postVoteRequest.getPostId()).get();
-        Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
-        if (postVote.isEmpty()) {
-            PostVote newPostVote = new PostVote();
-            newPostVote.setPost(post);
-            newPostVote.setUser(currentUser);
-            newPostVote.setTime(LocalDateTime.now());
-            newPostVote.setValue((byte) -1);
-            postVotesRepository.save(newPostVote);
-            resultResponse.setResult(true);
-        } else if (postVote.get().getValue() == 1) {
-            postVotesRepository.updatePostVote((byte) -1, currentUser, post);
-            resultResponse.setResult(true);
-        }
-        return resultResponse;
+        return createPostVote(postVoteRequest, (byte) -1, (byte) 1);
     }
 
     @Override
@@ -286,66 +231,85 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public ResultResponse moderation(ModerationRequest moderationRequest) {
-        ResultResponse resultResponse = new ResultResponse();
         Optional<Post> post = postsRepository.findById(moderationRequest.getPostId());
+        post.orElseThrow(() -> new NoSuchElementException("Пост не найден"));
         main.model.User moderator = getAuthUser();
-        if (moderationRequest.getDecision().equals("accept")) {
-            postsRepository.updateModerationStatus(ModerationStatus.ACCEPTED, moderator.getId(), post.get().getId());
-        } else if (moderationRequest.getDecision().equals("decline")) {
-            postsRepository.updateModerationStatus(ModerationStatus.DECLINED, moderator.getId(), post.get().getId());
+        String decision = moderationRequest.getDecision();
+        Integer postId = post.get().getId();
+        Integer moderatorId = moderator.getId();
+        switch (decision) {
+            case "accept" -> postsRepository.updateModerationStatus(ModerationStatus.ACCEPTED, moderatorId, postId);
+            case "decline" -> postsRepository.updateModerationStatus(ModerationStatus.DECLINED, moderatorId, postId);
         }
-        resultResponse.setResult(true);
-        return resultResponse;
+        return new ResultResponse(true);
     }
 
     @Override
     public Object image(MultipartFile multipartFile) throws IOException {
         String contentType = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
         if (multipartFile.getSize() < MAX_FILE_SIZE && (contentType.equals("png") || contentType.equals("jpg"))) {
-            String hash = generateRandomHash(5);
+            String hash = generateRandomHash();
             String path = "./upload/ab/cd/ef/" + hash + "." + contentType;
             FileOutputStream outputStream = new FileOutputStream(path);
             outputStream.write(multipartFile.getBytes());
             return "/upload/ab/cd/ef/" + hash + "." + contentType;
         } else {
-            ErrorsResponse errorsResponse = new ErrorsResponse();
-            Map<AbstractError, String> errors = new HashMap<>();
-            if (multipartFile.getSize() > MAX_FILE_SIZE) {
-                ImageError imageError = new ImageError("Размер файла превышает допустимый размер");
-                errors.put(imageError, imageError.getMessage());
-            }
-            ImageError imageError = new ImageError("Неверный формат изображения! Изображение должно быть в формате png или jpg");
-            errors.put(imageError, imageError.getMessage());
-            errorsResponse.setResult(false);
-            errorsResponse.setErrors(errors);
-            return errorsResponse;
+            return getErrorsResponse(multipartFile);
         }
+    }
+
+    private static ErrorsResponse getErrorsResponse(MultipartFile multipartFile) {
+        ErrorsResponse errorsResponse = new ErrorsResponse();
+        Map<String, String> errors = new HashMap<>();
+        if (multipartFile.getSize() > MAX_FILE_SIZE) {
+            errors.put("image", "Размер файла превышает допустимый размер");
+        }
+        errors.put("image", "Неверный формат изображения! Изображение должно быть в формате png или jpg");
+        errorsResponse.setResult(false);
+        errorsResponse.setErrors(errors);
+        return errorsResponse;
+    }
+
+    private ResultResponse createPostVote(PostVoteRequest postVoteRequest, byte postVoteValue, byte currentPostVoteValue) {
+        main.model.User currentUser = getAuthUser();
+        Optional<Post> optionalPost = postsRepository.findById(postVoteRequest.getPostId());
+        optionalPost.orElseThrow(() -> new NoSuchElementException("Пост не найден"));
+        Post post = optionalPost.get();
+        Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
+        if (postVote.isEmpty()) {
+            PostVote newPostVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
+            postVotesRepository.save(newPostVote);
+        } else if (postVote.get().getValue() == currentPostVoteValue) {
+            postVotesRepository.updatePostVote(postVoteValue, currentUser, post);
+        }
+        return new ResultResponse(true);
     }
 
     private ErrorsResponse createPost(int id, PostRequest postRequest, boolean postPremoderation) {
         ErrorsResponse errorsResponse = new ErrorsResponse();
-        Map<AbstractError, String> errors = new HashMap<>();
+        String htmlTagRegexp = "<.*?>";
         String title = postRequest.getTitle();
-        String text = postRequest.getText();
-        String htmlTagRegexp = "\\<.*?\\>";
-        main.model.User currentUser = getAuthUser();
-        if (text.replaceAll(htmlTagRegexp, "").length() > 50 && title.length() > 3) {
+        String text = postRequest.getText().replaceAll(htmlTagRegexp, "");
+        Map<String, String> errors = validatePost(title, text);
+        if (!errors.isEmpty()) {
+            errorsResponse.setErrors(errors);
+        } else {
+            main.model.User currentUser = getAuthUser();
             Post post = new Post();
             List<Tag> tags = new ArrayList<>();
+            postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
             post.setIsActive(postRequest.getActive());
             post.setTitle(postRequest.getTitle());
             post.setText(postRequest.getText());
             post.setUser(currentUser);
-            postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
             post.setTags(tags);
             if (id != 0) {
                 post.setId(id);
             }
             if (postPremoderation) {
-                if (currentUser.getIsModerator() != 1) {
-                    post.setModerationStatus(ModerationStatus.NEW);
-                } else {
-                    post.setModerationStatus(ModerationStatus.ACCEPTED);
+                switch (currentUser.getIsModerator()) {
+                    case 1 -> post.setModerationStatus(ModerationStatus.ACCEPTED);
+                    case 0 -> post.setModerationStatus(ModerationStatus.NEW);
                 }
             } else {
                 post.setModerationStatus(ModerationStatus.ACCEPTED);
@@ -357,37 +321,36 @@ public class PostServiceImpl implements PostService {
             }
             errorsResponse.setResult(true);
             postsRepository.save(post);
-        } else {
-            if (title.isEmpty()) {
-                TitleError titleError = new TitleError("Заголовок не установлен");
-                errors.put(titleError, titleError.getMessage());
-            } else if (title.length() < 3) {
-                TitleError titleError = new TitleError("Заголовок слишком короткий");
-                errors.put(titleError, titleError.getMessage());
-            }
-            if (text.replaceAll(htmlTagRegexp, "").isEmpty()) {
-                TextError textError = new TextError("Текст публикации пустой");
-                errors.put(textError, textError.getMessage());
-            } else if (text.replaceAll(htmlTagRegexp, "").length() < 50) {
-                TextError textError = new TextError("Текст публикации слишком короткий");
-                errors.put(textError, textError.getMessage());
-            }
-            errorsResponse.setErrors(errors);
         }
         return errorsResponse;
+    }
+
+    private Map<String, String> validatePost(String title, String text) {
+        Map<String, String> errors = new HashMap<>();
+        if (title.isEmpty()) {
+            errors.put("title", "Заголовок не установлен");
+        } else if (title.length() < 3) {
+            errors.put("title", "Заголовок слишком короткий");
+        }
+        if (text.isEmpty()) {
+            errors.put("text", "Текст публикации пустой");
+        } else if (text.length() < 50) {
+            errors.put("text", "Текст публикации слишком короткий");
+        }
+        return errors;
     }
 
     private main.model.User getAuthUser() {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email = user.getUsername();
-        return usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not fount"));
+        return usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not found"));
     }
 
-    private String generateRandomHash(int length) {
+    private String generateRandomHash() {
         String chars = "0123456789abcdefghijklmnopqrstuvwxyz";
         Random rnd = new Random();
-        StringBuilder sb = new StringBuilder(length);
-        for (int i = 0; i < length; i++)
+        StringBuilder sb = new StringBuilder(5);
+        for (int i = 0; i < 5; i++)
             sb.append(chars.charAt(rnd.nextInt(chars.length())));
         return sb.toString();
     }

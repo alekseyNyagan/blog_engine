@@ -2,9 +2,6 @@ package main.service;
 
 import main.api.request.RegistrationRequest;
 import main.api.response.ErrorsResponse;
-import main.error.AbstractError;
-import main.error.CaptchaError;
-import main.error.EmailError;
 import main.model.CaptchaCode;
 import main.model.User;
 import main.repository.CaptchaCodeRepository;
@@ -56,9 +53,8 @@ public class UserServiceImplTest {
     @Test
     public void addUserShouldReturnCaptchaError() {
         ErrorsResponse expected = new ErrorsResponse();
-        Map<AbstractError, String> errors = new HashMap<>();
-        CaptchaError error = new CaptchaError();
-        errors.put(error, error.getMessage());
+        Map<String, String> errors = new HashMap<>();
+        errors.put("captcha", "Код с картинки введён неверно");
         RegistrationRequest registrationRequest = new RegistrationRequest();
         registrationRequest.setEmail("example@mail.ru");
         registrationRequest.setName("Tim");
@@ -79,9 +75,8 @@ public class UserServiceImplTest {
     @Test
     public void addUserShouldReturnEmailError() {
         ErrorsResponse expected = new ErrorsResponse();
-        Map<AbstractError, String> errors = new HashMap<>();
-        EmailError error = new EmailError();
-        errors.put(error, error.getMessage());
+        Map<String, String> errors = new HashMap<>();
+        errors.put("email", "Этот e-mail уже зарегистрирован");
         RegistrationRequest registrationRequest = new RegistrationRequest();
         registrationRequest.setEmail("example@mail.ru");
         registrationRequest.setName("Tim");

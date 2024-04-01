@@ -1,13 +1,13 @@
 package main.api.response;
 
 public interface StatisticsResponse {
-    public Integer getPostsCount();
+    Integer getPostsCount();
 
-    public Integer getLikesCount();
+    Integer getLikesCount();
 
-    public Integer getDislikesCount();
+    Integer getDislikesCount();
 
-    public Integer getViewsCount();
+    Integer getViewsCount();
 
-    public Long getFirstPublication();
+    Long getFirstPublication();
 }

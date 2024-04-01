@@ -26,13 +26,12 @@ public class GlobalSettingsServiceImpl implements GlobalSettingsService {
 
     @Override
     public GlobalSettingsResponse getGlobalSettings() {
-        GlobalSettingsResponse globalSettingsResponse = new GlobalSettingsResponse();
         Map<String, Boolean> settings = globalSettingsRepository.findAll().stream().map(mapper::toDTO)
                 .collect(Collectors.toMap(GlobalSettingDTO::getCode, GlobalSettingDTO::isValue));
-        globalSettingsResponse.setMultiuserMode(settings.get("MULTIUSER_MODE"));
-        globalSettingsResponse.setPostPremoderation(settings.get("POST_PREMODERATION"));
-        globalSettingsResponse.setStatisticsIsPublic(settings.get("STATISTICS_IS_PUBLIC"));
-        return globalSettingsResponse;
+        return new GlobalSettingsResponse(
+                settings.get("MULTIUSER_MODE")
+                , settings.get("POST_PREMODERATION")
+                , settings.get("STATISTICS_IS_PUBLIC"));
     }
 
     @Override

@@ -17,8 +17,6 @@ public class TagsServiceImpl implements TagsService {
 
     @Override
     public TagsResponse getTags() {
-        TagsResponse tagResponse = new TagsResponse();
-        tagResponse.setTags(tagsRepository.getTags());
-        return tagResponse;
+        return new TagsResponse(tagsRepository.getTags());
     }
 }

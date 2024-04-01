@@ -11,7 +11,7 @@ public class DefaultController {
         return "index";
     }
 
-    @GetMapping(value = "/**/{path:[^\\.]*}")
+    @GetMapping(value = "/**/{path:[^.]*}")
     public String redirectToIndex() {
         return "forward:/";
     }

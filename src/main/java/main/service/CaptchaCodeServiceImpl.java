@@ -33,12 +33,9 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
         CaptchaCodeResponse captchaCodeResponse = new CaptchaCodeResponse();
         try {
             Cage cage = new Cage();
-            CaptchaCode captchaCode = new CaptchaCode();
             String code = cage.getTokenGenerator().next().substring(0, 5);
             String secretCode = cage.getTokenGenerator().next();
-            captchaCode.setCode(code);
-            captchaCode.setSecretCode(secretCode);
-            captchaCode.setTime(LocalDateTime.now());
+            CaptchaCode captchaCode = new CaptchaCode(LocalDateTime.now(), secretCode, code);
             captchaCodeRepository.save(captchaCode);
             BufferedImage bufferedImage = resizeImage(cage.drawImage(code));
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
