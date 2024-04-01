@@ -11,8 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.NoSuchElementException;
-
 @RestController
 @RequestMapping("/api/post")
 public class ApiPostController {
@@ -34,7 +32,7 @@ public class ApiPostController {
     @GetMapping("/search")
     public ResponseEntity<PostsResponse> search(@RequestParam int offset, @RequestParam int limit, String query) {
         if (query.isBlank()) {
-            return new ResponseEntity<>(postService.getPosts(offset, limit, "recent"), HttpStatus.OK) ;
+            return new ResponseEntity<>(postService.getPosts(offset, limit, "recent"), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(postService.getPostsByQuery(offset, limit, query), HttpStatus.OK);
         }
@@ -52,11 +50,7 @@ public class ApiPostController {
 
     @GetMapping("/{id}")
     public ResponseEntity getPostById(@PathVariable int id) {
-        try {
-            return ResponseEntity.status(HttpStatus.OK).body(postService.getPostById(id));
-        } catch (NoSuchElementException exception){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
-        }
+        return ResponseEntity.status(HttpStatus.OK).body(postService.getPostById(id));
     }
 
     @GetMapping("/moderation")

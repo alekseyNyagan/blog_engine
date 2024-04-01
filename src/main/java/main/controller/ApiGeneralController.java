@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/api")
@@ -27,7 +26,7 @@ public class ApiGeneralController {
 
     @Autowired
     public ApiGeneralController(InitResponse initResponse, GlobalSettingsService globalSettingsService, TagsService tagsService
-    , PostService postService, PostCommentService postCommentService, UserService userService) {
+            , PostService postService, PostCommentService postCommentService, UserService userService) {
         this.initResponse = initResponse;
         this.globalSettingsService = globalSettingsService;
         this.tagsService = tagsService;
@@ -60,14 +59,10 @@ public class ApiGeneralController {
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity addComment(@RequestBody CommentRequest commentRequest) {
         CommentResponse commentResponse = postCommentService.addComment(commentRequest);
-        try {
-            if (commentResponse.getErrors() == null) {
-                return ResponseEntity.status(HttpStatus.OK).body(commentResponse);
-            } else {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(commentResponse);
-            }
-        } catch (NoSuchElementException exception) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception.getMessage());
+        if (commentResponse.getErrors() == null) {
+            return ResponseEntity.status(HttpStatus.OK).body(commentResponse);
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(commentResponse);
         }
     }
 
