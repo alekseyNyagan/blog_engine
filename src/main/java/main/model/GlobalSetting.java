@@ -26,4 +26,9 @@ public class GlobalSetting extends AbstractEntity {
     @Column(name = "value")
     @NotNull
     private String value;
+
+    public GlobalSetting(String code, String value) {
+        this.code = code;
+        this.value = value;
+    }
 }

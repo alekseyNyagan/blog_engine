@@ -66,14 +66,14 @@ public class UserServiceImpl implements UserService {
     public ErrorsResponse addUser(RegistrationRequest registrationRequest) {
         ErrorsResponse errorsResponse = new ErrorsResponse();
         Map<String, String> errors = new HashMap<>();
-        boolean isEmailExist = usersRepository.findUserByEmail(registrationRequest.getEmail()).isPresent();
+        boolean isUserWithCurrentEmailExists = usersRepository.findUserByEmail(registrationRequest.getEmail()).isPresent();
         boolean isCaptchaCodeEqual = captchaCodeRepository
                 .findCaptchaCodeBySecretCode(registrationRequest.getCaptchaSecret()).getCode().equals(registrationRequest.getCaptcha());
         if (!isCaptchaCodeEqual) {
             errors.put("captcha", "Код с картинки введён неверно");
         }
-        if (isEmailExist) {
-            errors.put("email", "Этот e-mail уже зарегистрирован");
+        if (isUserWithCurrentEmailExists) {
+            errors.put("email", "Пользователь с данным e-mail уже зарегистрирован");
         }
         if (errors.isEmpty()) {
             User user = new User((byte) 0

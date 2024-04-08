@@ -1,43 +1,60 @@
 package main.service;
 
 import main.api.response.GlobalSettingsResponse;
+import main.dto.GlobalSettingDTO;
+import main.mapper.GlobalSettingMapper;
 import main.model.GlobalSetting;
 import main.repository.GlobalSettingsRepository;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 public class GlobalSettingsServiceImplTest {
 
-    @Autowired
-    private GlobalSettingsServiceImpl globalSettingsService;
-
-    @MockBean
+    @Mock
     private GlobalSettingsRepository globalSettingsRepository;
 
-    @BeforeEach
-    public void setUp() {
-        List<GlobalSetting> settings = List.of(new GlobalSetting("MULTIUSER_MODE", "Многопользовательский режим", "YES"),
-                new GlobalSetting("POST_PREMODERATION", "Премодерация постов", "YES"),
-                new GlobalSetting("STATISTICS_IS_PUBLIC", "Показывать всем статистику блога", "NO"));
-        Mockito.when(globalSettingsRepository.findAll()).thenReturn(settings);
-    }
+    @Mock
+    private GlobalSettingMapper mapper;
+
+    @InjectMocks
+    private GlobalSettingsServiceImpl globalSettingsService;
 
     @Test
+    @DisplayName("Should return all global settings")
     public void testGetGlobalSettings() {
-        GlobalSettingsResponse expected = new GlobalSettingsResponse();
-        expected.setMultiuserMode(true);
-        expected.setPostPremoderation(true);
-        expected.setStatisticsIsPublic(false);
+        List<GlobalSetting> globalSettings = List.of(
+                new GlobalSetting("MULTIUSER_MODE", "YES"),
+                new GlobalSetting("POST_PREMODERATION", "NO"),
+                new GlobalSetting("STATISTICS_IS_PUBLIC", "YES")
+        );
 
-        GlobalSettingsResponse actual = globalSettingsService.getGlobalSettings();
-        Assertions.assertEquals(expected, actual);
+        List<GlobalSettingDTO> globalSettingDTOS = globalSettings.stream()
+                .map(gs -> new GlobalSettingDTO(gs.getCode(), "YES".equals(gs.getValue())))
+                .toList();
+
+        when(globalSettingsRepository.findAll()).thenReturn(globalSettings);
+        when(mapper.toDTO(any(GlobalSetting.class))).thenAnswer(invocation -> {
+            GlobalSetting globalSetting = invocation.getArgument(0);
+            return globalSettingDTOS.stream()
+                    .filter(dto -> dto.getCode().equals(globalSetting.getCode()))
+                    .findFirst()
+                    .orElse(null);
+        });
+
+        GlobalSettingsResponse response = globalSettingsService.getGlobalSettings();
+
+        assertTrue(response.isMultiuserMode());
+        assertFalse(response.isPostPremoderation());
+        assertTrue(response.isStatisticsIsPublic());
     }
 }

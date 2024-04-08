@@ -1,210 +1,151 @@
 package main.service;
 
-import br.com.six2six.fixturefactory.Fixture;
-import br.com.six2six.fixturefactory.Rule;
 import main.api.response.PostsResponse;
-import main.dto.PostDTO;
+import main.mapper.CurrentPostMapper;
 import main.mapper.PostMapper;
-import main.model.*;
-import main.model.enums.ModerationStatus;
+import main.model.Post;
+import main.repository.PostVotesRepository;
 import main.repository.PostsRepository;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import main.repository.UsersRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.*;
 
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 public class PostServiceImplTest {
-    private List<Post> posts;
-    List<PostDTO> postDTOS;
 
-    @Autowired
-    private PostService postService;
-
-    @Autowired
-    private PostMapper mapper;
-
-    @MockBean
+    @Mock
     private PostsRepository postsRepository;
 
-    @BeforeEach
-    public void setUp() {
-        Fixture.of(User.class).addTemplate("user", new Rule() {{
-            add("id", random(Integer.class, range(1, 200)));
-            add("isModerator", random(Byte.class, range(0, 1)));
-            add("regTime", randomDate("2020-01-01", "2023-01-01", new SimpleDateFormat("yyyy-MM-dd")));
-            add("name", firstName());
-            add("email", "${name}@gmail.com");
-            add("password", lastName());
-        }});
-        Fixture.of(PostComment.class).addTemplate("postComment", new Rule() {{
-            add("id", random(Integer.class, range(1, 100)));
-            add("user", one(User.class, "user"));
-            add("time", randomDate("2020-01-01", "2023-01-01", new SimpleDateFormat("yyyy-MM-dd")));
-            add("text", regex("[a-zA-Z]{10,50}"));
-        }});
-        Fixture.of(PostVote.class).addTemplate("postVote", new Rule() {{
-            add("user", one(User.class, "user"));
-            add("time", randomDate("2020-01-01", "2023-01-01", new SimpleDateFormat("yyyy-MM-dd")));
-            add("value", uniqueRandom("-1", "1"));
-        }});
-        Fixture.of(Tag.class).addTemplate("tag", new Rule() {{
-            add("id", random(Integer.class, range(1, 10)));
-            add("name", regex("[a-zA-z]{1,5}"));
-        }});
-        Fixture.of(Post.class).addTemplate("post", new Rule() {{
-            add("id", random(Integer.class, range(1, 50)));
-            add("isActive", random(Byte.class, range(0, 1)));
-            add("moderationStatus", uniqueRandom(ModerationStatus.NEW, ModerationStatus.ACCEPTED, ModerationStatus.DECLINED));
-            add("user", one(User.class, "user"));
-            add("time", randomDate("2020-01-01", "2023-01-01", new SimpleDateFormat("yyyy-MM-dd")));
-            add("title", regex("[a-zA-Z]{10,20}"));
-            add("text", regex("[a-zA-Z]{10,50}"));
-            add("viewCount", random(Integer.class, range(0, 100)));
-            add("comments", has(20).of(PostComment.class, "postComment"));
-            add("votes", has(10).of(PostVote.class, "postVote"));
-            add("tags", has(5).of(Tag.class, "tag"));
-        }});
-        posts = Fixture.from(Post.class).gimme(10, "post");
-        Mockito.when(postsRepository.findById(posts.get(0).getId())).thenReturn(Optional.of(posts.get(0)));
-        Mockito.when(postsRepository.findById(posts.get(1).getId())).thenReturn(Optional.of(posts.get(1)));
-        Mockito.when(postsRepository.findById(posts.get(2).getId())).thenReturn(Optional.of(posts.get(2)));
-        Mockito.when(postsRepository.findById(posts.get(3).getId())).thenReturn(Optional.of(posts.get(3)));
-        Mockito.when(postsRepository.findById(posts.get(4).getId())).thenReturn(Optional.of(posts.get(4)));
-        Mockito.when(postsRepository.findById(posts.get(5).getId())).thenReturn(Optional.of(posts.get(5)));
-        Mockito.when(postsRepository.findById(posts.get(6).getId())).thenReturn(Optional.of(posts.get(6)));
-        Mockito.when(postsRepository.findById(posts.get(7).getId())).thenReturn(Optional.of(posts.get(7)));
-        Mockito.when(postsRepository.findById(posts.get(8).getId())).thenReturn(Optional.of(posts.get(8)));
-        Mockito.when(postsRepository.findById(posts.get(9).getId())).thenReturn(Optional.of(posts.get(9)));
-        Mockito.when(postsRepository.countPostsByIsActiveAndModerationStatus()).thenReturn(10);
+    @Mock
+    private PostMapper postMapper;
+
+    @Mock
+    private UsersRepository usersRepository;
+
+    @Mock
+    private CurrentPostMapper currentPostMapper;
+
+    @Mock
+    private PostVotesRepository postVotesRepository;
+
+    @InjectMocks
+    private PostServiceImpl postService;
+
+    @Test
+    @DisplayName("Should return recent posts")
+    void getPostsShouldReturnRecentPosts() {
+        int offset = 0;
+        int limit = 10;
+        String mode = "recent";
+        Pageable page = PageRequest.of(0, limit, Sort.by(Sort.Direction.DESC, "time"));
+        Page<Post> posts = new PageImpl<>(List.of(new Post()));
+        when(postsRepository.findAllByIsActiveAndModerationStatus(page)).thenReturn(posts);
+
+        PostsResponse response = postService.getPosts(offset, limit, mode);
+
+        assertNotNull(response);
+        assertEquals(posts.getTotalElements(), response.getCount());
+        verify(postsRepository, times(1)).findAllByIsActiveAndModerationStatus(page);
     }
 
     @Test
-    public void getPostsShouldReturnSortedListByTimeDescending() {
-        PostsResponse expected = new PostsResponse();
-        posts.sort(((o1, o2) -> {
-            if (o1.getTime().isAfter(o2.getTime())) {
-                return 1;
-            } else if (o1.getTime().isBefore(o2.getTime())) {
-                return -1;
-            } else {
-                return 0;
-            }
-        }));
-        postDTOS = posts.stream().map(mapper::toDTO).collect(Collectors.toList());
-        expected.setPosts(postDTOS);
-        expected.setCount(10);
-        Mockito.when(postsRepository.findAllByIsActiveAndModerationStatus(Mockito.any(Pageable.class))).thenReturn(posts);
+    @DisplayName("Should return popular posts")
+    void getPostsShouldReturnPopularPosts() {
+        int offset = 0;
+        int limit = 10;
+        String mode = "popular";
+        Pageable page = PageRequest.of(0, limit);
+        Page<Post> posts = new PageImpl<>(List.of(new Post()));
+        when(postsRepository.findAllByPostCommentCount(page)).thenReturn(posts);
 
-        PostsResponse actual = postService.getPosts(0, 10, "recent");
-        Assertions.assertEquals(expected, actual);
+        PostsResponse response = postService.getPosts(offset, limit, mode);
+
+        assertNotNull(response);
+        assertEquals(posts.getTotalElements(), response.getCount());
+        verify(postsRepository, times(1)).findAllByPostCommentCount(page);
     }
 
     @Test
-    public void getPostsShouldReturnSortedListByCommentsCount() {
-        PostsResponse expected = new PostsResponse();
-        posts.sort((Comparator.comparingInt(o -> o.getComments().size())));
-        postDTOS = posts.stream().map(mapper::toDTO).collect(Collectors.toList());
-        expected.setPosts(postDTOS);
-        expected.setCount(10);
-        Mockito.when(postsRepository.findAllByPostCommentCount(Mockito.any(Pageable.class))).thenReturn(posts);
+    @DisplayName("Should return earliest posts")
+    void getPostsShouldReturnEarliestPosts() {
+        int offset = 0;
+        int limit = 10;
+        String mode = "early";
+        Pageable page = PageRequest.of(0, limit, Sort.by(Sort.Direction.ASC, "time"));
+        Page<Post> posts = new PageImpl<>(List.of(new Post()));
+        when(postsRepository.findAllByIsActiveAndModerationStatus(page)).thenReturn(posts);
 
-        PostsResponse actual = postService.getPosts(0, 10, "popular");
-        Assertions.assertEquals(expected, actual);
+        PostsResponse response = postService.getPosts(offset, limit, mode);
+
+        assertNotNull(response);
+        assertEquals(posts.getTotalElements(), response.getCount());
+        verify(postsRepository, times(1)).findAllByIsActiveAndModerationStatus(page);
     }
 
     @Test
-    public void getPostsShouldReturnSortedListByLikes() {
-        PostsResponse expected = new PostsResponse();
-        posts.sort(((o1, o2) -> {
-            if (o1.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count() >
-                    o2.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count()) {
-                return 1;
-            } else if (o1.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count() <
-                    o2.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count()) {
-                return -1;
-            } else {
-                return 0;
-            }
-        }));
-        postDTOS = posts.stream().map(mapper::toDTO).collect(Collectors.toList());
-        expected.setPosts(postDTOS);
-        expected.setCount(10);
-        Mockito.when(postsRepository.findAllLikedPosts(Mockito.any(Pageable.class))).thenReturn(posts);
+    @DisplayName("Should return best posts")
+    void getPostsShouldReturnBestPosts() {
+        int offset = 0;
+        int limit = 10;
+        String mode = "best";
+        Pageable page = PageRequest.of(0, limit);
+        Page<Post> posts = new PageImpl<>(List.of(new Post()));
+        when(postsRepository.findAllLikedPosts(page)).thenReturn(posts);
 
-        PostsResponse actual = postService.getPosts(0, 10, "best");
-        Assertions.assertEquals(expected, actual);
+        PostsResponse response = postService.getPosts(offset, limit, mode);
+
+        assertNotNull(response);
+        assertEquals(posts.getTotalElements(), response.getCount());
+        verify(postsRepository, times(1)).findAllLikedPosts(page);
     }
 
     @Test
-    public void getPostsShouldReturnSortedListByTimeAscending() {
-        PostsResponse expected = new PostsResponse();
-        posts.sort(((o1, o2) -> {
-            if (o1.getTime().isBefore(o2.getTime())) {
-                return 1;
-            } else if (o1.getTime().isAfter(o2.getTime())) {
-                return -1;
-            } else {
-                return 0;
-            }
-        }));
-        postDTOS = posts.stream().map(mapper::toDTO).collect(Collectors.toList());
-        expected.setPosts(postDTOS);
-        expected.setCount(10);
-        Mockito.when(postsRepository.findAllByIsActiveAndModerationStatus(Mockito.any(Pageable.class))).thenReturn(posts);
+    @DisplayName("Should return posts that contain query")
+    void testGetPostsByQuery() {
+        int offset = 0;
+        int limit = 10;
+        String query = "test";
+        Pageable page = PageRequest.of(0, limit);
+        Page<Post> posts = new PageImpl<>(List.of(new Post()));
+        when(postsRepository.findPostsByIsActiveAndModerationStatusAndTextLike(query, page)).thenReturn(posts);
 
-        PostsResponse actual = postService.getPosts(0, 10, "early");
-        Assertions.assertEquals(expected, actual);
+        PostsResponse response = postService.getPostsByQuery(offset, limit, query);
+
+        assertNotNull(response);
+        assertEquals(posts.getTotalElements(), response.getCount());
+        verify(postsRepository, times(1)).findPostsByIsActiveAndModerationStatusAndTextLike(query, page);
     }
 
     @Test
-    public void getModerationPostsShouldReturnNewPosts() {
-        PostsResponse expected = new PostsResponse();
-        List<Post> newPosts = posts.stream().filter(post -> post.getModerationStatus().equals(ModerationStatus.NEW)).collect(Collectors.toList());
-        postDTOS = newPosts.stream().map(mapper::toDTO).collect(Collectors.toList());
-        expected.setPosts(postDTOS);
-        expected.setCount(10);
-        Mockito.when(postsRepository.findPostByModerationStatus(ModerationStatus.NEW, PageRequest.of(0, 10))).thenReturn(newPosts);
-        Mockito.when(postsRepository.countPostsByModerationStatus(ModerationStatus.NEW)).thenReturn(10);
+    @DisplayName("Should return posts that was published at current day")
+    void testGetPostsByDate() {
+        int offset = 0;
+        int limit = 10;
+        String date = "2022-01-01";
+        LocalDateTime dayStart = LocalDate.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd")).atStartOfDay();
+        LocalDateTime dayEnd = dayStart.plusDays(1);
+        Pageable page = PageRequest.of(0, limit);
 
-        PostsResponse actual = postService.getModerationPosts(0, 10, "new");
-        Assertions.assertEquals(expected, actual);
-    }
+        Page<Post> posts = new PageImpl<>(List.of(new Post()));
+        when(postsRepository.findPostsByIsActiveAndModerationStatusAndTime(dayStart, dayEnd, page)).thenReturn(posts);
 
-    @Test
-    public void getModerationPostsShouldReturnAcceptedPosts() {
-        PostsResponse expected = new PostsResponse();
-        List<Post> acceptedPosts = posts.stream().filter(post -> post.getModerationStatus().equals(ModerationStatus.ACCEPTED)).collect(Collectors.toList());
-        postDTOS = acceptedPosts.stream().map(mapper::toDTO).collect(Collectors.toList());
-        expected.setPosts(postDTOS);
-        expected.setCount(10);
-        Mockito.when(postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED, PageRequest.of(0, 10))).thenReturn(acceptedPosts);
-        Mockito.when(postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED)).thenReturn(10);
+        PostsResponse response = postService.getPostsByDate(offset, limit, date);
 
-        PostsResponse actual = postService.getModerationPosts(0, 10, "accepted");
-        Assertions.assertEquals(expected, actual);
-    }
-
-    @Test
-    public void getModerationPostsShouldReturnDeclinedPosts() {
-        PostsResponse expected = new PostsResponse();
-        List<Post> declinedPosts = posts.stream().filter(post -> post.getModerationStatus().equals(ModerationStatus.DECLINED)).collect(Collectors.toList());
-        postDTOS = declinedPosts.stream().map(mapper::toDTO).collect(Collectors.toList());
-        expected.setPosts(postDTOS);
-        expected.setCount(10);
-        Mockito.when(postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED, PageRequest.of(0, 10))).thenReturn(declinedPosts);
-        Mockito.when(postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED)).thenReturn(10);
-
-        PostsResponse actual = postService.getModerationPosts(0, 10, "declined");
-        Assertions.assertEquals(expected, actual);
+        assertNotNull(response);
+        assertEquals(posts.getTotalElements(), response.getCount());
+        verify(postsRepository, times(1)).findPostsByIsActiveAndModerationStatusAndTime(dayStart, dayEnd, page);
     }
 }

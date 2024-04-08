@@ -3,6 +3,7 @@ package main.controller;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
+import main.dto.CurrentPostDTO;
 import main.service.GlobalSettingsService;
 import main.service.PostServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +50,7 @@ public class ApiPostController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity getPostById(@PathVariable int id) {
+    public ResponseEntity<CurrentPostDTO> getPostById(@PathVariable int id) {
         return ResponseEntity.status(HttpStatus.OK).body(postService.getPostById(id));
     }
 

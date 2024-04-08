@@ -5,25 +5,26 @@ import main.dto.TagDTO;
 import main.repository.TagsRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.projection.SpelAwareProxyProjectionFactory;
 
 import java.util.HashSet;
 import java.util.Set;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 public class TagServiceImplTest {
 
     private final ProjectionFactory factory = new SpelAwareProxyProjectionFactory();
 
-    @Autowired
+    @InjectMocks
     private TagsServiceImpl tagsService;
 
-    @MockBean
+    @Mock
     private TagsRepository tagsRepository;
 
     @Test

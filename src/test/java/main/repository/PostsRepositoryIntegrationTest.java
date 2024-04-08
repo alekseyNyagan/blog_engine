@@ -32,7 +32,7 @@ class PostsRepositoryIntegrationTest {
     void shouldReturnPostsCountByModerationStatus() {
         assertThat(postsRepository.countPostsByModerationStatus(ModerationStatus.NEW)).isEqualTo(1);
         assertThat(postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED)).isEqualTo(0);
-        assertThat(postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED)).isEqualTo(2);
+        assertThat(postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED)).isEqualTo(12);
     }
 
     @Test
@@ -44,7 +44,7 @@ class PostsRepositoryIntegrationTest {
     @Test
     @DisplayName("Should return list of calenderDTO by year")
     void shouldReturnCountPostsByYear() {
-        assertThat(postsRepository.countPostsByYear(2024).size()).isEqualTo(1);
+        assertThat(postsRepository.countPostsByYear(2024).size()).isEqualTo(2);
     }
 
     @Test

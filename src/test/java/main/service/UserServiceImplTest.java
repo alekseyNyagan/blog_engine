@@ -6,93 +6,96 @@ import main.model.CaptchaCode;
 import main.model.User;
 import main.repository.CaptchaCodeRepository;
 import main.repository.UsersRepository;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
 public class UserServiceImplTest {
 
-    @Autowired
-    private UserServiceImpl userService;
-
-    @MockBean
+    @Mock
     private UsersRepository usersRepository;
 
-    @MockBean
+    @Mock
     private CaptchaCodeRepository captchaCodeRepository;
 
+    @InjectMocks
+    private UserServiceImpl userService;
+
     @Test
-    public void addUserShouldReturnResultTrue() {
-        ErrorsResponse expected = new ErrorsResponse();
-        expected.setResult(true);
+    @DisplayName("Should add user successfully")
+    void testAddUser_Success() {
         RegistrationRequest registrationRequest = new RegistrationRequest();
-        registrationRequest.setEmail("example@mail.ru");
-        registrationRequest.setName("Tim");
-        registrationRequest.setPassword("111111");
-        registrationRequest.setCaptcha("ab4e8");
-        registrationRequest.setCaptchaSecret("bcd746a8r3");
+        registrationRequest.setEmail("test@example.com");
+        registrationRequest.setPassword("password");
+        registrationRequest.setCaptcha("12345");
+        registrationRequest.setCaptchaSecret("secret");
+
         CaptchaCode captchaCode = new CaptchaCode();
-        captchaCode.setCode("ab4e8");
-        captchaCode.setSecretCode("bcd746a8r3");
-        Mockito.when(usersRepository.findUserByEmail(registrationRequest.getEmail())).thenReturn(Optional.empty());
-        Mockito.when(captchaCodeRepository.findCaptchaCodeBySecretCode(registrationRequest.getCaptchaSecret())).thenReturn(captchaCode);
+        captchaCode.setCode("12345");
+        when(captchaCodeRepository.findCaptchaCodeBySecretCode(anyString())).thenReturn(captchaCode);
 
-        ErrorsResponse actual = userService.addUser(registrationRequest);
+        when(usersRepository.findUserByEmail(anyString())).thenReturn(Optional.empty());
 
-        Assertions.assertEquals(expected.isResult(), actual.isResult());
+        ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
+
+        assertTrue(errorsResponse.isResult());
+        verify(usersRepository, times(1)).save(any(User.class));
     }
 
     @Test
-    public void addUserShouldReturnCaptchaError() {
-        ErrorsResponse expected = new ErrorsResponse();
-        Map<String, String> errors = new HashMap<>();
-        errors.put("captcha", "Код с картинки введён неверно");
+    @DisplayName("Should not add user because user with same email already exists")
+    void testAddUser_EmailExists() {
         RegistrationRequest registrationRequest = new RegistrationRequest();
-        registrationRequest.setEmail("example@mail.ru");
-        registrationRequest.setName("Tim");
-        registrationRequest.setPassword("111111");
-        registrationRequest.setCaptcha("ab4e8");
-        registrationRequest.setCaptchaSecret("bcd746a8r3");
-        CaptchaCode captchaCode = new CaptchaCode();
-        captchaCode.setCode("ab4mn5");
-        captchaCode.setSecretCode("bcd746a8r3");
-        expected.setErrors(errors);
-        Mockito.when(usersRepository.findUserByEmail(registrationRequest.getEmail())).thenReturn(Optional.empty());
-        Mockito.when(captchaCodeRepository.findCaptchaCodeBySecretCode(registrationRequest.getCaptchaSecret())).thenReturn(captchaCode);
+        registrationRequest.setEmail("test@example.com");
+        registrationRequest.setPassword("password");
+        registrationRequest.setCaptcha("12345");
+        registrationRequest.setCaptchaSecret("secret");
 
-        ErrorsResponse actual = userService.addUser(registrationRequest);
-        Assertions.assertEquals(expected.getErrors(), actual.getErrors());
+        CaptchaCode captchaCode = new CaptchaCode();
+        captchaCode.setCode("12345");
+        when(captchaCodeRepository.findCaptchaCodeBySecretCode(anyString())).thenReturn(captchaCode);
+
+        User existingUser = new User();
+        existingUser.setEmail("test@example.com");
+        when(usersRepository.findUserByEmail(anyString())).thenReturn(Optional.of(existingUser));
+
+        ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
+
+        assertFalse(errorsResponse.isResult());
+        assertTrue(errorsResponse.getErrors().containsKey("email"));
+        verify(usersRepository, never()).save(any(User.class));
     }
 
     @Test
-    public void addUserShouldReturnEmailError() {
-        ErrorsResponse expected = new ErrorsResponse();
-        Map<String, String> errors = new HashMap<>();
-        errors.put("email", "Этот e-mail уже зарегистрирован");
+    @DisplayName("Should not add user because captcha is invalid")
+    void testAddUser_InvalidCaptcha() {
         RegistrationRequest registrationRequest = new RegistrationRequest();
-        registrationRequest.setEmail("example@mail.ru");
-        registrationRequest.setName("Tim");
-        registrationRequest.setPassword("111111");
-        registrationRequest.setCaptcha("ab4e8");
-        registrationRequest.setCaptchaSecret("bcd746a8r3");
-        User user = new User();
-        user.setEmail("example@mail.ru");
-        CaptchaCode captchaCode = new CaptchaCode();
-        captchaCode.setCode("ab4e8");
-        captchaCode.setSecretCode("bcd746a8r3");
-        expected.setErrors(errors);
-        Mockito.when(usersRepository.findUserByEmail(registrationRequest.getEmail())).thenReturn(Optional.of(user));
-        Mockito.when(captchaCodeRepository.findCaptchaCodeBySecretCode(registrationRequest.getCaptchaSecret())).thenReturn(captchaCode);
+        registrationRequest.setEmail("test@example.com");
+        registrationRequest.setPassword("password");
+        registrationRequest.setCaptcha("12345");
+        registrationRequest.setCaptchaSecret("secret");
 
-        ErrorsResponse actual = userService.addUser(registrationRequest);
-        Assertions.assertEquals(expected.getErrors(), actual.getErrors());
+        CaptchaCode captchaCode = new CaptchaCode();
+        captchaCode.setCode("54321");
+        when(captchaCodeRepository.findCaptchaCodeBySecretCode(anyString())).thenReturn(captchaCode);
+
+        when(usersRepository.findUserByEmail(anyString())).thenReturn(Optional.empty());
+
+        ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
+
+        assertFalse(errorsResponse.isResult());
+        assertTrue(errorsResponse.getErrors().containsKey("captcha"));
+        verify(usersRepository, never()).save(any(User.class));
     }
 }
