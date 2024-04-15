@@ -15,7 +15,7 @@ import java.util.NoSuchElementException;
 public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(value = {NoSuchElementException.class, UsernameNotFoundException.class})
-    public ResponseEntity<Object> handleNoSuchElementException(RuntimeException ex, WebRequest request) {
+    public ResponseEntity<Object> handleResourceNotFound(RuntimeException ex, WebRequest request) {
         return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.NOT_FOUND, request);
     }
 }

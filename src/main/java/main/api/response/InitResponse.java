@@ -1,9 +1,11 @@
 package main.api.response;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+@Schema(description = "Response to the client with info about blog")
 @Data
 @Component
 public class InitResponse {

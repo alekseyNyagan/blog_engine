@@ -1,5 +1,8 @@
 package main.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import main.api.request.LoginRequest;
 import main.api.request.PasswordRequest;
@@ -21,6 +24,7 @@ import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 
+@Tag(name = "Authentication controller", description = "Controller for operations that relate to authentication")
 @RestController
 @RequestMapping("api/auth")
 public class ApiAuthController {
@@ -35,6 +39,9 @@ public class ApiAuthController {
         this.usersService = usersService;
     }
 
+    @Operation(summary = "Check if user is logged in", description = """
+    Checks if user is logged in and information about authenticated user
+    """)
     @GetMapping("/check")
     public ResponseEntity<LoginResponse> check(Principal principal) {
         if (principal == null) {
@@ -43,36 +50,50 @@ public class ApiAuthController {
         return ResponseEntity.ok(usersService.check(principal.getName()));
     }
 
+    @Operation(summary = "Get picture of captcha from the server")
     @GetMapping("/captcha")
     public CaptchaCodeResponse getCaptcha() {
         return captchaCodeService.getCaptcha();
     }
 
+    @Operation(summary = "Register new user")
     @PostMapping("/register")
-    public ErrorsResponse addUser(@RequestBody RegistrationRequest registrationRequest) {
+    public ErrorsResponse addUser(@RequestBody @Parameter(description = """
+            Information about new user
+            """) RegistrationRequest registrationRequest) {
         return usersService.addUser(registrationRequest);
     }
 
+    @Operation(summary = "Login user")
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest loginRequest
+    public ResponseEntity<LoginResponse> login(@RequestBody @Parameter(description = """
+            Information with user credentials to login
+            """) LoginRequest loginRequest
             , HttpServletRequest request
             , HttpServletResponse response) {
         return ResponseEntity.ok(usersService.login(loginRequest, request, response));
     }
 
+    @Operation(summary = "Logout user")
     @GetMapping("/logout")
     @PreAuthorize("hasAuthority('user:write')")
     public ResultResponse logout() {
         return usersService.logout();
     }
 
+    @Operation(summary = "Restore password", description = "Send information message to registered email to restore password")
     @PostMapping("/restore")
-    public ResponseEntity<ResultResponse> restore(@RequestBody RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException {
+    public ResponseEntity<ResultResponse> restore(@RequestBody @Parameter(description = """
+        Request body with registered email to restore password
+        """) RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException {
         return ResponseEntity.ok(usersService.restore(restoreRequest, httpServletRequest));
     }
 
+    @Operation(summary = "Change password")
     @PostMapping("/password")
-    public ResponseEntity<ErrorsResponse> password(@RequestBody PasswordRequest passwordRequest) {
+    public ResponseEntity<ErrorsResponse> password(@RequestBody @Parameter(description = """
+        Request body with information to change password
+        """) PasswordRequest passwordRequest) {
         return ResponseEntity.ok(usersService.password(passwordRequest));
     }
 }
