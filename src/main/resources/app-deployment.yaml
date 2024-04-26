@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blog-engine-v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: blog-engine-v1
+  template:
+    metadata:
+      labels:
+        app: blog-engine-v1
+    spec:
+      containers:
+        - name: blog-engine-v1
+          image: blog_engine:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: MYSQL_DB_HOST
+              value: jdbc:mysql
+            - name: MYSQL_DB_PORT
+              value: //mysql
+            - name: MYSQL_SCHEMA_NAME
+              value: blog_engine
+            - name: MYSQL_USERNAME
+              value: root
+            - name: MYSQL_USER_PASSWORD
+              value: testtest
+            - name: GMAIL_USERNAME
+              value:
+            - name: GMAIL_PASSWORD
+              value:
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blog-engine-service
+spec:
+  ports:
+    - port: 8080
+      protocol: TCP
+  selector:
+    app: blog-engine-v1
+  type: NodePort
