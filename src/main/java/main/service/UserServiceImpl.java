@@ -8,6 +8,7 @@ import main.model.CaptchaCode;
 import main.model.User;
 import main.repository.CaptchaCodeRepository;
 import main.repository.UsersRepository;
+import main.utils.RandomUtil;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -173,7 +174,7 @@ public class UserServiceImpl implements UserService {
         Optional<User> user = usersRepository.findUserByEmail(restoreRequest.getEmail());
         if (user.isPresent()) {
             String email = user.get().getEmail();
-            String hash = generateRandomHash();
+            String hash = RandomUtil.generateRandomHash(40);
             String domainName = httpServletRequest.getServerName();
             usersRepository.updateUserCode(hash, email);
             MimeMessage message = javaMailSender.createMimeMessage();
@@ -225,14 +226,5 @@ public class UserServiceImpl implements UserService {
         graphics2D.drawImage(originalImage, 0, 0, 36, 36, null);
         graphics2D.dispose();
         return resizedImage;
-    }
-
-    private String generateRandomHash() {
-        String chars = "0123456789abcdefghijklmnopqrstuvwxyz";
-        Random rnd = new Random();
-        StringBuilder sb = new StringBuilder(40);
-        for (int i = 0; i < 40; i++)
-            sb.append(chars.charAt(rnd.nextInt(chars.length())));
-        return sb.toString();
     }
 }

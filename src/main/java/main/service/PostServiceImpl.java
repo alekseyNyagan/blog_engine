@@ -16,6 +16,7 @@ import main.model.enums.ModerationStatus;
 import main.repository.PostVotesRepository;
 import main.repository.PostsRepository;
 import main.repository.UsersRepository;
+import main.utils.RandomUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -228,7 +229,7 @@ public class PostServiceImpl implements PostService {
     public Object image(MultipartFile multipartFile) throws IOException {
         String contentType = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
         if (multipartFile.getSize() < MAX_FILE_SIZE && (contentType.equals("png") || contentType.equals("jpg"))) {
-            String hash = generateRandomHash();
+            String hash = RandomUtil.generateRandomHash(5);
             String path = "./upload/ab/cd/ef/" + hash + "." + contentType;
             FileOutputStream outputStream = new FileOutputStream(path);
             outputStream.write(multipartFile.getBytes());
@@ -324,14 +325,5 @@ public class PostServiceImpl implements PostService {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email = user.getUsername();
         return usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not found"));
-    }
-
-    private String generateRandomHash() {
-        String chars = "0123456789abcdefghijklmnopqrstuvwxyz";
-        Random rnd = new Random();
-        StringBuilder sb = new StringBuilder(5);
-        for (int i = 0; i < 5; i++)
-            sb.append(chars.charAt(rnd.nextInt(chars.length())));
-        return sb.toString();
     }
 }
