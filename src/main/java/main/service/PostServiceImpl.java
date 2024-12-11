@@ -40,6 +40,7 @@ public class PostServiceImpl implements PostService {
 
     private static final int MAX_FILE_SIZE = 5_242_880;
     private static final int POSTS_ON_PAGE = 10;
+    private static final String POST_NOT_FOUND_ERROR_MESSAGE = "Пост не найден";
     private final UsersRepository usersRepository;
     private final PostsRepository postsRepository;
     private final PostVotesRepository postVotesRepository;
@@ -131,7 +132,7 @@ public class PostServiceImpl implements PostService {
             }
             return currentPostMapper.toDTO(post.get());
         } else {
-            throw new NoSuchElementException("Пост не найден");
+            throw new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE);
         }
     }
 
@@ -211,7 +212,7 @@ public class PostServiceImpl implements PostService {
     @Override
     public ResultResponse moderation(ModerationRequest moderationRequest) {
         Optional<Post> post = postsRepository.findById(moderationRequest.getPostId());
-        post.orElseThrow(() -> new NoSuchElementException("Пост не найден"));
+        post.orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         main.model.User moderator = getAuthUser();
         String decision = moderationRequest.getDecision();
         Integer postId = post.get().getId();
@@ -252,7 +253,7 @@ public class PostServiceImpl implements PostService {
     private ResultResponse createPostVote(PostVoteRequest postVoteRequest, byte postVoteValue, byte currentPostVoteValue) {
         main.model.User currentUser = getAuthUser();
         Optional<Post> optionalPost = postsRepository.findById(postVoteRequest.getPostId());
-        optionalPost.orElseThrow(() -> new NoSuchElementException("Пост не найден"));
+        optionalPost.orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         Post post = optionalPost.get();
         Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
         if (postVote.isEmpty()) {

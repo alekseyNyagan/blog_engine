@@ -15,6 +15,10 @@ import java.util.stream.Collectors;
 
 @Service
 public class GlobalSettingsServiceImpl implements GlobalSettingsService {
+    private static final String MULTIUSER_MODE = "MULTIUSER_MODE";
+    private static final String POST_PREMODERATION = "POST_PREMODERATION";
+    private static final String STATISTICS_IS_PUBLIC = "STATISTICS_IS_PUBLIC";
+
     private final GlobalSettingsRepository globalSettingsRepository;
     private final GlobalSettingMapper mapper;
 
@@ -29,19 +33,19 @@ public class GlobalSettingsServiceImpl implements GlobalSettingsService {
         Map<String, Boolean> settings = globalSettingsRepository.findAll().stream().map(mapper::toDTO)
                 .collect(Collectors.toMap(GlobalSettingDTO::getCode, GlobalSettingDTO::isValue));
         return new GlobalSettingsResponse(
-                settings.get("MULTIUSER_MODE")
-                , settings.get("POST_PREMODERATION")
-                , settings.get("STATISTICS_IS_PUBLIC"));
+                settings.get(MULTIUSER_MODE)
+                , settings.get(POST_PREMODERATION)
+                , settings.get(STATISTICS_IS_PUBLIC));
     }
 
     @Override
     public void updateGlobalSettings(SettingsRequest settingsRequest) {
-        Set<GlobalSettingDTO> globalSettingDTOS = Set.of(new GlobalSettingDTO("MULTIUSER_MODE", settingsRequest.isMultiuserMode()),
-                new GlobalSettingDTO("POST_PREMODERATION", settingsRequest.isPostPremoderation()),
-                new GlobalSettingDTO("STATISTICS_IS_PUBLIC", settingsRequest.isStatisticsIsPublic()));
+        Set<GlobalSettingDTO> globalSettingDTOS = Set.of(new GlobalSettingDTO(MULTIUSER_MODE, settingsRequest.isMultiuserMode()),
+                new GlobalSettingDTO(POST_PREMODERATION, settingsRequest.isPostPremoderation()),
+                new GlobalSettingDTO(STATISTICS_IS_PUBLIC, settingsRequest.isStatisticsIsPublic()));
         Map<String, String> globalSettings = globalSettingDTOS.stream().map(mapper::toEntity).collect(Collectors.toMap(GlobalSetting::getCode, GlobalSetting::getValue));
-        globalSettingsRepository.updateSetting(globalSettings.get("MULTIUSER_MODE"), "MULTIUSER_MODE");
-        globalSettingsRepository.updateSetting(globalSettings.get("POST_PREMODERATION"), "POST_PREMODERATION");
-        globalSettingsRepository.updateSetting(globalSettings.get("STATISTICS_IS_PUBLIC"), "STATISTICS_IS_PUBLIC");
+        globalSettingsRepository.updateSetting(globalSettings.get(MULTIUSER_MODE), MULTIUSER_MODE);
+        globalSettingsRepository.updateSetting(globalSettings.get(POST_PREMODERATION), POST_PREMODERATION);
+        globalSettingsRepository.updateSetting(globalSettings.get(STATISTICS_IS_PUBLIC), STATISTICS_IS_PUBLIC);
     }
 }
