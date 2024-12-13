@@ -3,11 +3,11 @@ package main.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
 import main.dto.CurrentPostDTO;
-import main.service.GlobalSettingsService;
 import main.service.PostServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,12 +21,10 @@ import org.springframework.web.bind.annotation.*;
 public class ApiPostController {
 
     private final PostServiceImpl postService;
-    private final GlobalSettingsService globalSettingsService;
 
     @Autowired
-    public ApiPostController(PostServiceImpl postService, GlobalSettingsService globalSettingsService) {
+    public ApiPostController(PostServiceImpl postService) {
         this.postService = postService;
-        this.globalSettingsService = globalSettingsService;
     }
 
     @Operation(summary = "Get posts", description = "Get page of posts with chosen mode")
@@ -92,22 +90,20 @@ public class ApiPostController {
     @Operation(summary = "Add post", description = "Add new post")
     @PostMapping("")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResponseEntity<ErrorsResponse> addPost(@RequestBody @Parameter(description = """
+    public ResponseEntity<ResultResponse> addPost(@RequestBody @Parameter(description = """
             Request body for posting new post
-            """) PostRequest postRequest) {
-        GlobalSettingsResponse globalSettings = globalSettingsService.getGlobalSettings();
-        return ResponseEntity.ok(postService.addPost(postRequest, globalSettings.isPostPremoderation()));
+            """) @Valid PostRequest postRequest) {
+        return ResponseEntity.ok(postService.addPost(postRequest));
     }
 
     @Operation(summary = "Update post")
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResponseEntity<ErrorsResponse> updatePost(@PathVariable @Parameter(description = "Post id to update") int id
+    public ResponseEntity<ResultResponse> updatePost(@PathVariable @Parameter(description = "Post id to update") int id
             , @RequestBody @Parameter(description = """
             Request body for updating post
             """) PostRequest postRequest) {
-        GlobalSettingsResponse globalSettings = globalSettingsService.getGlobalSettings();
-        return ResponseEntity.ok(postService.updatePost(id, postRequest, globalSettings.isPostPremoderation()));
+        return ResponseEntity.ok(postService.updatePost(id, postRequest));
     }
 
     @Operation(summary = "Make like")

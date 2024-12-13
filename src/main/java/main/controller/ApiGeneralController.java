@@ -3,7 +3,11 @@ package main.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import main.api.request.*;
+import jakarta.validation.Valid;
+import main.api.request.CommentRequest;
+import main.api.request.ModerationRequest;
+import main.api.request.SettingsRequest;
+import main.api.request.UpdateProfileRequest;
 import main.api.response.*;
 import main.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,14 +72,9 @@ public class ApiGeneralController {
     @PostMapping("/comment")
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<CommentResponse> addComment(@RequestBody @Parameter(description = """
-        Comment text and post id that user want to add to and id of comment to reply to
-        """) CommentRequest commentRequest) {
-        CommentResponse commentResponse = postCommentService.addComment(commentRequest);
-        if (commentResponse.getErrors() == null) {
-            return ResponseEntity.status(HttpStatus.OK).body(commentResponse);
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(commentResponse);
-        }
+            Comment text and post id that user want to add to and id of comment to reply to
+            """) @Valid CommentRequest commentRequest) {
+        return ResponseEntity.status(HttpStatus.OK).body(postCommentService.addComment(commentRequest));
     }
 
     @Operation(summary = "Get current user statistics")
@@ -99,8 +98,8 @@ public class ApiGeneralController {
     @PostMapping(value = "/profile/my", consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAuthority('user:write')")
     public ErrorsResponse updateProfile(@RequestBody @Parameter(description = """
-        Request body with info for updating profile of user
-        """) UpdateProfileRequest updateProfileRequest) {
+            Request body with info for updating profile of user
+            """) UpdateProfileRequest updateProfileRequest) {
         return userService.updateUser(updateProfileRequest);
     }
 
@@ -108,8 +107,8 @@ public class ApiGeneralController {
     @PostMapping(value = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('user:write')")
     public ErrorsResponse updateProfileWithPhoto(@ModelAttribute @Parameter(description = """
-        Request body with info for updating profile of user
-        """) UpdateProfileRequest updateProfileRequest) throws IOException {
+            Request body with info for updating profile of user
+            """) UpdateProfileRequest updateProfileRequest) throws IOException {
         return userService.updateUserWithPhoto(updateProfileRequest);
     }
 
@@ -117,8 +116,8 @@ public class ApiGeneralController {
     @PostMapping("/moderation")
     @PreAuthorize("hasAuthority('user:moderate')")
     public ResponseEntity<ResultResponse> moderation(@RequestBody @Parameter(description = """
-        Request body with info for moderation
-        """) ModerationRequest moderationRequest) {
+            Request body with info for moderation
+            """) ModerationRequest moderationRequest) {
         return ResponseEntity.ok(postService.moderation(moderationRequest));
     }
 
@@ -126,8 +125,8 @@ public class ApiGeneralController {
     @PutMapping("/settings")
     @PreAuthorize("hasAuthority('user:moderate')")
     public void updateGlobalSettings(@RequestBody @Parameter(description = """
-        Request body with settings should be updated
-        """) SettingsRequest settingsRequest) {
+            Request body with settings should be updated
+            """) SettingsRequest settingsRequest) {
         globalSettingsService.updateGlobalSettings(settingsRequest);
     }
 

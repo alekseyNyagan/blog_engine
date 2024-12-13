@@ -18,8 +18,8 @@ public interface PostService {
     CalendarResponse getCalendar(int year);
     CurrentPostDTO getPostById(int id);
     PostsResponse getMyPosts(int offset, int limit, String status);
-    ErrorsResponse addPost(PostRequest postRequest, boolean postPremoderation);
-    ErrorsResponse updatePost(int id, PostRequest postRequest, boolean postPremoderation);
+    ResultResponse addPost(PostRequest postRequest);
+    ResultResponse updatePost(int id, PostRequest postRequest);
     ResultResponse like(PostVoteRequest postVoteRequest);
     ResultResponse dislike(PostVoteRequest postVoteRequest);
     StatisticsResponse getMyStatistic();

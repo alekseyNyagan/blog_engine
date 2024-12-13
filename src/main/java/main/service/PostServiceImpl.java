@@ -47,15 +47,17 @@ public class PostServiceImpl implements PostService {
     private final PostVotesRepository postVotesRepository;
     private final PostMapper postMapper;
     private final CurrentPostMapper currentPostMapper;
+    private final GlobalSettingsService globalSettingsService;
 
     @Autowired
     public PostServiceImpl(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository
-            , CurrentPostMapper currentPostMapper, PostVotesRepository postVotesRepository) {
+            , CurrentPostMapper currentPostMapper, PostVotesRepository postVotesRepository, GlobalSettingsService globalSettingsService) {
         this.postsRepository = postsRepository;
         this.postMapper = postMapper;
         this.usersRepository = usersRepository;
         this.currentPostMapper = currentPostMapper;
         this.postVotesRepository = postVotesRepository;
+        this.globalSettingsService = globalSettingsService;
     }
 
     @Override
@@ -82,7 +84,7 @@ public class PostServiceImpl implements PostService {
                 posts = postsRepository.findAllByIsActiveAndModerationStatus(page);
             }
         }
-        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
+        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).toList();
         return new PostsResponse(posts.getTotalElements(), postDTOs);
     }
 
@@ -91,7 +93,7 @@ public class PostServiceImpl implements PostService {
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
         Page<Post> posts = postsRepository.findPostsByIsActiveAndModerationStatusAndTextLike(query, page);
-        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
+        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).toList();
         return new PostsResponse(posts.getTotalElements(), postDTOs);
     }
 
@@ -103,7 +105,7 @@ public class PostServiceImpl implements PostService {
         LocalDateTime dayEnd = dayStart.plusDays(1);
         Pageable page = PageRequest.of(pageNumber, limit);
         Page<Post> posts = postsRepository.findPostsByIsActiveAndModerationStatusAndTime(dayStart, dayEnd, page);
-        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
+        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).toList();
         return new PostsResponse(posts.getTotalElements(), postDTOs);
     }
 
@@ -147,7 +149,7 @@ public class PostServiceImpl implements PostService {
             case "declined" -> posts = postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED, page);
             case "accepted" -> posts = postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED, page);
         }
-        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).collect(Collectors.toList());
+        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).toList();
         return new PostsResponse(posts.getTotalElements(), postDTOs);
     }
 
@@ -176,17 +178,21 @@ public class PostServiceImpl implements PostService {
             case "published" -> posts = postsRepository
                     .findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.ACCEPTED, page);
         }
-        return new PostsResponse(posts.getTotalElements(), posts.stream().map(postMapper::toDTO).collect(Collectors.toList()));
+        return new PostsResponse(posts.getTotalElements(), posts.stream().map(postMapper::toDTO).toList());
     }
 
     @Override
-    public ErrorsResponse addPost(PostRequest postRequest, boolean postPremoderation) {
-        return createPost(0, postRequest, postPremoderation);
+    public ResultResponse addPost(PostRequest postRequest) {
+        Post post = createPost(postRequest);
+        postsRepository.save(post);
+        return new ResultResponse(true);
     }
 
     @Override
-    public ErrorsResponse updatePost(int id, PostRequest postRequest, boolean postPremoderation) {
-        return createPost(id, postRequest, postPremoderation);
+    public ResultResponse updatePost(int id, PostRequest postRequest) {
+        Post post = createPost(id, postRequest);
+        postsRepository.save(post);
+        return new ResultResponse(true);
     }
 
     @Override
@@ -212,15 +218,16 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public ResultResponse moderation(ModerationRequest moderationRequest) {
-        Optional<Post> post = postsRepository.findById(moderationRequest.getPostId());
-        post.orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
+        Post post = postsRepository.findById(moderationRequest.getPostId())
+                .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         main.model.User moderator = getAuthUser();
         String decision = moderationRequest.getDecision();
-        Integer postId = post.get().getId();
+        Integer postId = post.getId();
         Integer moderatorId = moderator.getId();
-        switch (decision) {
-            case "accept" -> postsRepository.updateModerationStatus(ModerationStatus.ACCEPTED, moderatorId, postId);
-            case "decline" -> postsRepository.updateModerationStatus(ModerationStatus.DECLINED, moderatorId, postId);
+        if (decision.equals("accept")) {
+            postsRepository.updateModerationStatus(ModerationStatus.ACCEPTED, moderatorId, postId);
+        } else {
+            postsRepository.updateModerationStatus(ModerationStatus.DECLINED, moderatorId, postId);
         }
         return new ResultResponse(true);
     }
@@ -253,9 +260,8 @@ public class PostServiceImpl implements PostService {
 
     private ResultResponse createPostVote(PostVoteRequest postVoteRequest, byte postVoteValue, byte currentPostVoteValue) {
         main.model.User currentUser = getAuthUser();
-        Optional<Post> optionalPost = postsRepository.findById(postVoteRequest.getPostId());
-        optionalPost.orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        Post post = optionalPost.get();
+        Post post = postsRepository.findById(postVoteRequest.getPostId()).
+                orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
         if (postVote.isEmpty()) {
             PostVote newPostVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
@@ -266,59 +272,38 @@ public class PostServiceImpl implements PostService {
         return new ResultResponse(true);
     }
 
-    private ErrorsResponse createPost(int id, PostRequest postRequest, boolean postPremoderation) {
-        ErrorsResponse errorsResponse = new ErrorsResponse();
-        String htmlTagRegexp = "<.*?>";
-        String title = postRequest.getTitle();
-        String text = postRequest.getText().replaceAll(htmlTagRegexp, "");
-        Map<String, String> errors = validatePost(title, text);
-        if (!errors.isEmpty()) {
-            errorsResponse.setErrors(errors);
-        } else {
-            main.model.User currentUser = getAuthUser();
-            Post post = new Post();
-            List<Tag> tags = new ArrayList<>();
-            postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
-            post.setIsActive(postRequest.getActive());
-            post.setTitle(postRequest.getTitle());
-            post.setText(postRequest.getText());
-            post.setUser(currentUser);
-            post.setTags(tags);
-            if (id != 0) {
-                post.setId(id);
-            }
-            if (postPremoderation) {
-                switch (currentUser.getIsModerator()) {
-                    case 1 -> post.setModerationStatus(ModerationStatus.ACCEPTED);
-                    case 0 -> post.setModerationStatus(ModerationStatus.NEW);
-                }
-            } else {
+    private Post createPost(PostRequest postRequest) {
+        main.model.User currentUser = getAuthUser();
+        Post post = new Post();
+        List<Tag> tags = new ArrayList<>();
+        postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
+        post.setIsActive(postRequest.getActive());
+        post.setTitle(postRequest.getTitle());
+        post.setText(postRequest.getText());
+        post.setUser(currentUser);
+        post.setTags(tags);
+        if (globalSettingsService.getGlobalSettings().isPostPremoderation()) {
+            if (currentUser.getIsModerator() == 1) {
                 post.setModerationStatus(ModerationStatus.ACCEPTED);
-            }
-            if (postRequest.getTimestamp() <= Timestamp.valueOf(LocalDateTime.now()).getTime()) {
-                post.setTime(LocalDateTime.now());
             } else {
-                post.setTime(new Timestamp(postRequest.getTimestamp()).toLocalDateTime());
+                post.setModerationStatus(ModerationStatus.NEW);
             }
-            errorsResponse.setResult(true);
-            postsRepository.save(post);
+        } else {
+            post.setModerationStatus(ModerationStatus.ACCEPTED);
         }
-        return errorsResponse;
+        LocalDateTime now = LocalDateTime.now();
+        if (postRequest.getTimestamp() <= Timestamp.valueOf(now).getTime()) {
+            post.setTime(now);
+        } else {
+            post.setTime(new Timestamp(postRequest.getTimestamp()).toLocalDateTime());
+        }
+        return post;
     }
 
-    private Map<String, String> validatePost(String title, String text) {
-        Map<String, String> errors = new HashMap<>();
-        if (title.isEmpty()) {
-            errors.put("title", "Заголовок не установлен");
-        } else if (title.length() < 3) {
-            errors.put("title", "Заголовок слишком короткий");
-        }
-        if (text.isEmpty()) {
-            errors.put("text", "Текст публикации пустой");
-        } else if (text.length() < 50) {
-            errors.put("text", "Текст публикации слишком короткий");
-        }
-        return errors;
+    private Post createPost(int id, PostRequest postRequest) {
+        Post post = createPost(postRequest);
+        post.setId(id);
+        return post;
     }
 
     private main.model.User getAuthUser() {
