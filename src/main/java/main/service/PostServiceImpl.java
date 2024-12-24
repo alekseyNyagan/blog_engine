@@ -5,9 +5,8 @@ import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
 import main.dto.CalendarDTO;
-import main.dto.CurrentPostDTO;
-import main.dto.PostDTO;
-import main.mapper.CurrentPostMapper;
+import main.dto.CurrentPostDto;
+import main.dto.PostDto;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
@@ -19,7 +18,10 @@ import main.repository.UsersRepository;
 import main.utils.RandomUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -46,16 +48,14 @@ public class PostServiceImpl implements PostService {
     private final PostsRepository postsRepository;
     private final PostVotesRepository postVotesRepository;
     private final PostMapper postMapper;
-    private final CurrentPostMapper currentPostMapper;
     private final GlobalSettingsService globalSettingsService;
 
     @Autowired
-    public PostServiceImpl(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository
-            , CurrentPostMapper currentPostMapper, PostVotesRepository postVotesRepository, GlobalSettingsService globalSettingsService) {
+    public PostServiceImpl(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository,
+                           PostVotesRepository postVotesRepository, GlobalSettingsService globalSettingsService) {
         this.postsRepository = postsRepository;
         this.postMapper = postMapper;
         this.usersRepository = usersRepository;
-        this.currentPostMapper = currentPostMapper;
         this.postVotesRepository = postVotesRepository;
         this.globalSettingsService = globalSettingsService;
     }
@@ -84,8 +84,8 @@ public class PostServiceImpl implements PostService {
                 posts = postsRepository.findAllByIsActiveAndModerationStatus(page);
             }
         }
-        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).toList();
-        return new PostsResponse(posts.getTotalElements(), postDTOs);
+        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
+        return new PostsResponse(posts.getTotalElements(), postDtos);
     }
 
     @Override
@@ -93,8 +93,8 @@ public class PostServiceImpl implements PostService {
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
         Page<Post> posts = postsRepository.findPostsByIsActiveAndModerationStatusAndTextLike(query, page);
-        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).toList();
-        return new PostsResponse(posts.getTotalElements(), postDTOs);
+        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
+        return new PostsResponse(posts.getTotalElements(), postDtos);
     }
 
     @Override
@@ -105,8 +105,8 @@ public class PostServiceImpl implements PostService {
         LocalDateTime dayEnd = dayStart.plusDays(1);
         Pageable page = PageRequest.of(pageNumber, limit);
         Page<Post> posts = postsRepository.findPostsByIsActiveAndModerationStatusAndTime(dayStart, dayEnd, page);
-        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).toList();
-        return new PostsResponse(posts.getTotalElements(), postDTOs);
+        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
+        return new PostsResponse(posts.getTotalElements(), postDtos);
     }
 
     @Override
@@ -114,29 +114,22 @@ public class PostServiceImpl implements PostService {
         int pageNumber = offset / POSTS_ON_PAGE;
         Pageable page = PageRequest.of(pageNumber, limit);
         Page<Post> posts = postsRepository.findPostsByTag(tag, page);
-        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).toList();
-        return new PostsResponse(posts.getTotalElements(), postDTOs);
+        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
+        return new PostsResponse(posts.getTotalElements(), postDtos);
     }
 
     @Override
-    public CurrentPostDTO getPostById(int id) {
-        Optional<Post> post = postsRepository.findById(id);
-        if (post.isPresent()) {
-            if (SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken) {
-                postsRepository.incrementViewCount(id);
-            } else {
-                User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-                main.model.User currentUser = usersRepository
-                        .findUserByEmail(user.getUsername())
-                        .orElseThrow(() -> new UsernameNotFoundException("user" + user.getUsername() + "not found"));
-                if (!post.get().getUser().equals(currentUser) && currentUser.getIsModerator() != 1) {
-                    postsRepository.incrementViewCount(id);
-                }
-            }
-            return currentPostMapper.toDTO(post.get());
+    public CurrentPostDto getPostById(int id) {
+        Post post = postsRepository.findById(id).orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
+        if (SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken) {
+            postsRepository.incrementViewCount(id);
         } else {
-            throw new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE);
+            main.model.User authUser = getAuthUser();
+            if (!post.getUser().equals(authUser) && authUser.getIsModerator() != 1) {
+                postsRepository.incrementViewCount(id);
+            }
         }
+        return postMapper.toCurrentPostDto(post);
     }
 
     @Override
@@ -149,8 +142,8 @@ public class PostServiceImpl implements PostService {
             case "declined" -> posts = postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED, page);
             case "accepted" -> posts = postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED, page);
         }
-        List<PostDTO> postDTOs = posts.stream().map(postMapper::toDTO).toList();
-        return new PostsResponse(posts.getTotalElements(), postDTOs);
+        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
+        return new PostsResponse(posts.getTotalElements(), postDtos);
     }
 
     @Override
@@ -178,7 +171,7 @@ public class PostServiceImpl implements PostService {
             case "published" -> posts = postsRepository
                     .findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.ACCEPTED, page);
         }
-        return new PostsResponse(posts.getTotalElements(), posts.stream().map(postMapper::toDTO).toList());
+        return new PostsResponse(posts.getTotalElements(), posts.stream().map(postMapper::toPostDto).toList());
     }
 
     @Override

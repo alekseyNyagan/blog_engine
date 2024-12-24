@@ -4,16 +4,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.ToString;
+import lombok.experimental.SuperBuilder;
 
 @EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+@SuperBuilder(toBuilder = true)
 @Data
-public class UserDTO extends AbstractDTO {
-    @Schema(description = "Id of the user")
-    private int id;
-    @Schema(description = "Name of the user")
-    private String name;
-    @Schema(description = "Photo of the user")
-    private String photo;
+public class UserDto extends BaseUserDto {
     @Schema(description = "Email of the user")
     private String email;
     @Schema(description = "Is user moderator or not")

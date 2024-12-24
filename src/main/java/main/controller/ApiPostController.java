@@ -7,7 +7,7 @@ import jakarta.validation.Valid;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
-import main.dto.CurrentPostDTO;
+import main.dto.CurrentPostDto;
 import main.service.PostServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -65,7 +65,7 @@ public class ApiPostController {
 
     @Operation(summary = "Get post by id")
     @GetMapping("/{id}")
-    public ResponseEntity<CurrentPostDTO> getPostById(@PathVariable @Parameter(description = "Post id") int id) {
+    public ResponseEntity<CurrentPostDto> getPostById(@PathVariable @Parameter(description = "Post id") int id) {
         return ResponseEntity.status(HttpStatus.OK).body(postService.getPostById(id));
     }
 

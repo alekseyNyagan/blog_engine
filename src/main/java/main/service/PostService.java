@@ -4,7 +4,7 @@ import main.api.request.ModerationRequest;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
-import main.dto.CurrentPostDTO;
+import main.dto.CurrentPostDto;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -16,7 +16,7 @@ public interface PostService {
     PostsResponse getPostsByTag(int offset, int limit, String tag);
     PostsResponse getModerationPosts(int offset, int limit, String status);
     CalendarResponse getCalendar(int year);
-    CurrentPostDTO getPostById(int id);
+    CurrentPostDto getPostById(int id);
     PostsResponse getMyPosts(int offset, int limit, String status);
     ResultResponse addPost(PostRequest postRequest);
     ResultResponse updatePost(int id, PostRequest postRequest);

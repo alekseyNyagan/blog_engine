@@ -1,9 +1,8 @@
 package main.service;
 
-import main.api.request.SettingsRequest;
-import main.api.response.GlobalSettingsResponse;
+import main.dto.GlobalSettingsDto;
 
 public interface GlobalSettingsService {
-    GlobalSettingsResponse getGlobalSettings();
-    void updateGlobalSettings(SettingsRequest settingsRequest);
+    GlobalSettingsDto getGlobalSettings();
+    void updateGlobalSettings(GlobalSettingsDto globalSettingsDto);
 }

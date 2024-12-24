@@ -6,7 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import main.dto.UserDTO;
+import main.dto.UserDto;
 
 @Schema(description = "Response to the client with result of login operation")
 @Data
@@ -18,5 +18,5 @@ public class LoginResponse {
     private boolean result;
     @Schema(description = "Data with info about logged user")
     @JsonProperty("user")
-    private UserDTO userDTO;
+    private UserDto userDto;
 }

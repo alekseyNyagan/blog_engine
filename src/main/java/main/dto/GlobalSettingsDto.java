@@ -1,4 +1,4 @@
-package main.api.response;
+package main.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class GlobalSettingsResponse {
+public class GlobalSettingsDto {
     @Schema(description = "If this setting is enabled, new users will be able to register. Otherwise, they will not.")
     @JsonProperty("MULTIUSER_MODE")
     private boolean multiuserMode;

@@ -6,9 +6,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import main.api.request.CommentRequest;
 import main.api.request.ModerationRequest;
-import main.api.request.SettingsRequest;
 import main.api.request.UpdateProfileRequest;
 import main.api.response.*;
+import main.dto.GlobalSettingsDto;
 import main.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -58,7 +58,7 @@ public class ApiGeneralController {
 
     @Operation(summary = "Get global settings", description = "Get settings for entire blog")
     @GetMapping("/settings")
-    public GlobalSettingsResponse getGlobalSettings() {
+    public GlobalSettingsDto getGlobalSettings() {
         return globalSettingsService.getGlobalSettings();
     }
 
@@ -126,8 +126,8 @@ public class ApiGeneralController {
     @PreAuthorize("hasAuthority('user:moderate')")
     public void updateGlobalSettings(@RequestBody @Parameter(description = """
             Request body with settings should be updated
-            """) SettingsRequest settingsRequest) {
-        globalSettingsService.updateGlobalSettings(settingsRequest);
+            """) GlobalSettingsDto globalSettingsDto) {
+        globalSettingsService.updateGlobalSettings(globalSettingsDto);
     }
 
     @Operation(summary = "Upload image on server")

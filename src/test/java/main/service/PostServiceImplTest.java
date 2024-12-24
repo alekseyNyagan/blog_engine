@@ -1,7 +1,6 @@
 package main.service;
 
 import main.api.response.PostsResponse;
-import main.mapper.CurrentPostMapper;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.repository.PostVotesRepository;
@@ -34,9 +33,6 @@ public class PostServiceImplTest {
 
     @Mock
     private UsersRepository usersRepository;
-
-    @Mock
-    private CurrentPostMapper currentPostMapper;
 
     @Mock
     private PostVotesRepository postVotesRepository;

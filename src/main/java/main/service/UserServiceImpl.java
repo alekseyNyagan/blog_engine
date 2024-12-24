@@ -1,8 +1,14 @@
 package main.service;
 
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import main.api.request.*;
-import main.api.response.*;
+import main.api.response.ErrorsResponse;
+import main.api.response.LoginResponse;
+import main.api.response.ResultResponse;
 import main.mapper.UserMapper;
 import main.model.CaptchaCode;
 import main.model.User;
@@ -25,17 +31,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
-
-import jakarta.mail.Message;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
-import jakarta.servlet.http.HttpServletRequest;
-
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -217,7 +222,7 @@ public class UserServiceImpl implements UserService {
         main.model.User currentUser = usersRepository
                 .findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
-        return new LoginResponse(true, mapper.toDTO(currentUser));
+        return new LoginResponse(true, mapper.toUserDto(currentUser));
     }
 
     private BufferedImage resizeImage(BufferedImage originalImage) {
