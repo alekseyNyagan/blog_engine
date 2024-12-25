@@ -82,13 +82,7 @@ public class UserServiceImpl implements UserService {
             errors.put("email", "Пользователь с данным e-mail уже зарегистрирован");
         }
         if (errors.isEmpty()) {
-            User user = new User((byte) 0
-                    , LocalDateTime.now()
-                    , registrationRequest.getName()
-                    , registrationRequest.getEmail()
-                    , registrationRequest.getPassword()
-                    , registrationRequest.getCaptchaSecret()
-                    , null);
+            User user = mapper.fromRegistrationRequestToUser(registrationRequest);
             usersRepository.save(user);
             errorsResponse.setResult(true);
         }

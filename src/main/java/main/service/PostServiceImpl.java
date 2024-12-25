@@ -10,7 +10,6 @@ import main.dto.PostDto;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
-import main.model.Tag;
 import main.model.enums.ModerationStatus;
 import main.repository.PostVotesRepository;
 import main.repository.PostsRepository;
@@ -31,7 +30,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -48,16 +46,14 @@ public class PostServiceImpl implements PostService {
     private final PostsRepository postsRepository;
     private final PostVotesRepository postVotesRepository;
     private final PostMapper postMapper;
-    private final GlobalSettingsService globalSettingsService;
 
     @Autowired
     public PostServiceImpl(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository,
-                           PostVotesRepository postVotesRepository, GlobalSettingsService globalSettingsService) {
+                           PostVotesRepository postVotesRepository) {
         this.postsRepository = postsRepository;
         this.postMapper = postMapper;
         this.usersRepository = usersRepository;
         this.postVotesRepository = postVotesRepository;
-        this.globalSettingsService = globalSettingsService;
     }
 
     @Override
@@ -176,14 +172,14 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public ResultResponse addPost(PostRequest postRequest) {
-        Post post = createPost(postRequest);
+        Post post = postMapper.fromPostRequestToPost(postRequest, getAuthUser());
         postsRepository.save(post);
         return new ResultResponse(true);
     }
 
     @Override
     public ResultResponse updatePost(int id, PostRequest postRequest) {
-        Post post = createPost(id, postRequest);
+        Post post = postMapper.fromPostRequestToPost(id, postRequest, getAuthUser());
         postsRepository.save(post);
         return new ResultResponse(true);
     }

@@ -1,8 +1,10 @@
 package main.mapper;
 
+import main.api.request.PostRequest;
 import main.dto.CurrentPostDto;
 import main.dto.PostDto;
 import main.model.Post;
+import main.model.User;
 import org.mapstruct.*;
 import org.mapstruct.Mapper;
 
@@ -14,4 +16,10 @@ public interface PostMapper {
     @Mapping(target = "isActive", ignore = true)
     @Mapping(target = "tags", ignore = true)
     CurrentPostDto toCurrentPostDto(Post post);
+
+    @Mapping(target = "tags", ignore = true)
+    Post fromPostRequestToPost(PostRequest postRequest, User user);
+
+    @Mapping(target = "tags", ignore = true)
+    Post fromPostRequestToPost(int id, PostRequest postRequest, User user);
 }

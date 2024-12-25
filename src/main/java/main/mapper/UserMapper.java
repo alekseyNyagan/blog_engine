@@ -1,5 +1,6 @@
 package main.mapper;
 
+import main.api.request.RegistrationRequest;
 import main.dto.BaseUserDto;
 import main.dto.UserDto;
 import main.model.User;
@@ -13,4 +14,6 @@ public interface UserMapper {
     UserDto toUserDto(User user);
 
     BaseUserDto toBaseUserDto(User user);
+
+    User fromRegistrationRequestToUser(RegistrationRequest registrationRequest);
 }

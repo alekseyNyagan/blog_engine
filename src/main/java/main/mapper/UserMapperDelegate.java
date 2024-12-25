@@ -1,10 +1,13 @@
 package main.mapper;
 
+import main.api.request.RegistrationRequest;
 import main.dto.UserDto;
 import main.model.User;
 import main.model.enums.ModerationStatus;
 import main.repository.PostsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.time.LocalDateTime;
 
 public abstract class UserMapperDelegate implements UserMapper {
 
@@ -23,5 +26,16 @@ public abstract class UserMapperDelegate implements UserMapper {
                 .name(user.getName())
                 .photo(user.getPhoto())
                 .build();
+    }
+
+    @Override
+    public User fromRegistrationRequestToUser(RegistrationRequest registrationRequest) {
+        return new User((byte) 0
+                , LocalDateTime.now()
+                , registrationRequest.getName()
+                , registrationRequest.getEmail()
+                , registrationRequest.getPassword()
+                , registrationRequest.getCaptchaSecret()
+                , null);
     }
 }
