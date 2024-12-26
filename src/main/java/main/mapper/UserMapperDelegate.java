@@ -6,6 +6,7 @@ import main.model.User;
 import main.model.enums.ModerationStatus;
 import main.repository.PostsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 
@@ -13,6 +14,9 @@ public abstract class UserMapperDelegate implements UserMapper {
 
     @Autowired
     private PostsRepository postsRepository;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
 
     @Override
     public UserDto toUserDto(User user) {
@@ -34,7 +38,7 @@ public abstract class UserMapperDelegate implements UserMapper {
                 , LocalDateTime.now()
                 , registrationRequest.getName()
                 , registrationRequest.getEmail()
-                , registrationRequest.getPassword()
+                , passwordEncoder.encode(registrationRequest.getPassword())
                 , registrationRequest.getCaptchaSecret()
                 , null);
     }
