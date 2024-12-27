@@ -4,12 +4,12 @@ import com.github.cage.Cage;
 import main.api.response.CaptchaCodeResponse;
 import main.model.CaptchaCode;
 import main.repository.CaptchaCodeRepository;
+import main.utils.ImageUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,7 +20,7 @@ import java.util.Base64;
 public class CaptchaCodeServiceImpl implements CaptchaCodeService {
 
     @Value("${time.expire.captcha}")
-    private int CAPTCHA_EXPIRE_TIME;
+    private int captchaExpireTime;
     private final CaptchaCodeRepository captchaCodeRepository;
 
     @Autowired
@@ -37,25 +37,17 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
             String secretCode = cage.getTokenGenerator().next();
             CaptchaCode captchaCode = new CaptchaCode(LocalDateTime.now(), code, secretCode);
             captchaCodeRepository.save(captchaCode);
-            BufferedImage bufferedImage = resizeImage(cage.drawImage(code));
+            BufferedImage bufferedImage = ImageUtil.resizeImage(cage.drawImage(code), 100, 35);
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
             ImageIO.write(bufferedImage, "png", byteArrayOutputStream);
             byte[] image = byteArrayOutputStream.toByteArray();
             String encodedString = "data:image/png;base64, " + Base64.getEncoder().encodeToString(image);
             captchaCodeResponse.setImage(encodedString);
             captchaCodeResponse.setSecret(secretCode);
-            captchaCodeRepository.deleteAllByTimeBefore(CAPTCHA_EXPIRE_TIME);
+            captchaCodeRepository.deleteAllByTimeBefore(captchaExpireTime);
         } catch (IOException exception) {
             exception.printStackTrace();
         }
         return captchaCodeResponse;
-    }
-
-    private BufferedImage resizeImage(BufferedImage originalImage) throws IOException {
-        BufferedImage resizedImage = new BufferedImage(100, 35, BufferedImage.TYPE_INT_RGB);
-        Graphics2D graphics2D = resizedImage.createGraphics();
-        graphics2D.drawImage(originalImage, 0, 0, 100, 35, null);
-        graphics2D.dispose();
-        return resizedImage;
     }
 }

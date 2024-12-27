@@ -2,18 +2,16 @@ package main.repository;
 
 import main.api.response.StatisticsResponse;
 import main.dto.CalendarDTO;
-import main.model.enums.ModerationStatus;
 import main.model.Post;
 import main.model.User;
+import main.model.enums.ModerationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.NativeQuery;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
-
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -100,16 +98,11 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
             """)
     List<CalendarDTO> countPostsByYear(@Param("year") int year);
 
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE Post p SET p.viewCount = p.viewCount + 1 WHERE p.id = :id")
-    void incrementViewCount(@Param("id") int id);
-
     Page<Post> findPostsByUserAndIsActive(User user, byte isActive, Pageable pageable);
 
     Page<Post> findPostsByUserAndIsActiveAndModerationStatus(User user, byte isActive, ModerationStatus moderationStatus, Pageable pageable);
 
-    @Query(nativeQuery = true, value = """
+    @NativeQuery(value = """
             WITH post_temp AS (
             SELECT IFNULL(COUNT(id), 0) AS postsCount, IFNULL(SUM(view_count), 0) AS viewsCount, UNIX_TIMESTAMP(MIN(time)) AS firstPublication FROM posts
             WHERE user_id = :user_id AND is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= NOW()),
@@ -119,7 +112,7 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
             """)
     StatisticsResponse getMyStatistic(@Param("user_id") int userId);
 
-    @Query(nativeQuery = true, value = """
+    @NativeQuery(value = """
             WITH post_temp AS (
             SELECT IFNULL(COUNT(id), 0) AS postsCount, IFNULL(SUM(view_count), 0) AS viewsCount, UNIX_TIMESTAMP(MIN(time)) AS firstPublication FROM posts
             WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= NOW()),
@@ -129,10 +122,4 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
             SELECT postsCount, viewsCount, firstPublication, likesCount, dislikesCount FROM post_temp JOIN post_votes_temp
             """)
     StatisticsResponse getAllStatistic();
-
-    @Transactional
-    @Modifying
-    @Query(value = "UPDATE Post p SET p.moderationStatus = :moderation_status, p.moderatorId = :moderator_id WHERE p.id = :id")
-    void updateModerationStatus(@Param("moderation_status") ModerationStatus moderationStatus, @Param("moderator_id") int moderatorId, @Param("id") int id);
-
 }

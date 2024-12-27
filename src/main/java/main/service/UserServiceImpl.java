@@ -10,12 +10,11 @@ import main.api.response.ErrorsResponse;
 import main.api.response.LoginResponse;
 import main.api.response.ResultResponse;
 import main.mapper.UserMapper;
-import main.model.CaptchaCode;
 import main.model.User;
 import main.repository.CaptchaCodeRepository;
 import main.repository.UsersRepository;
+import main.utils.ImageUtil;
 import main.utils.RandomUtil;
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,13 +30,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.imageio.ImageIO;
-import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -148,10 +146,10 @@ public class UserServiceImpl implements UserService {
         if (multipartFile.getSize() <= MAX_PHOTO_SIZE * MB) {
             InputStream inputStream = new ByteArrayInputStream(multipartFile.getBytes());
             BufferedImage bufferedImage = ImageIO.read(inputStream);
-            BufferedImage resizedImage = resizeImage(bufferedImage);
+            BufferedImage resizedImage = ImageUtil.resizeImage(bufferedImage, 36, 36);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ImageIO.write(resizedImage, "png", outputStream);
-            String photo = "data:image/png;base64," + Base64.encodeBase64String(outputStream.toByteArray());
+            String photo = "data:image/png;base64," + Base64.getEncoder().encodeToString(outputStream.toByteArray());
             user.setName(updateProfileRequest.getName());
             user.setEmail(updateProfileRequest.getEmail());
             user.setPhoto(photo);
@@ -170,12 +168,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public ResultResponse restore(RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException {
         ResultResponse resultResponse = new ResultResponse();
-        Optional<User> user = usersRepository.findUserByEmail(restoreRequest.getEmail());
-        if (user.isPresent()) {
-            String email = user.get().getEmail();
+        Optional<User> userOptional = usersRepository.findUserByEmail(restoreRequest.getEmail());
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            String email = user.getEmail();
             String hash = RandomUtil.generateRandomHash(40);
             String domainName = httpServletRequest.getServerName();
-            usersRepository.updateUserCode(hash, email);
+            user.setCode(hash);
+            usersRepository.save(user);
             MimeMessage message = javaMailSender.createMimeMessage();
             message.addRecipients(Message.RecipientType.TO, email);
             message.setText("<HTML><body> Для восстановления пароля перейдите по ссылке <a href=\"http://"
@@ -191,20 +191,22 @@ public class UserServiceImpl implements UserService {
     public ErrorsResponse password(PasswordRequest passwordRequest) {
         ErrorsResponse errorsResponse = new ErrorsResponse();
         Map<String, String> errors = new HashMap<>();
-        Optional<User> user = usersRepository.findUserByCode(passwordRequest.getCode());
-        CaptchaCode captchaCode = captchaCodeRepository.findCaptchaCodeBySecretCode(passwordRequest.getCaptchaSecret());
-        if (user.isPresent() && captchaCode.getCode().equals(passwordRequest.getCaptcha())) {
-            usersRepository.updatePassword(passwordEncoder.encode(passwordRequest.getPassword()), user.get().getId());
+        Optional<User> userOptional = usersRepository.findUserByCode(passwordRequest.getCode());
+        boolean isCaptchaCodeEqual = captchaCodeRepository.findCaptchaCodeBySecretCode(passwordRequest.getCaptchaSecret())
+                .getCode().equals(passwordRequest.getCaptcha());
+        if (userOptional.isPresent() && isCaptchaCodeEqual) {
+            User user = userOptional.get();
+            user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
             errorsResponse.setResult(true);
         } else {
-            if (user.isEmpty()) {
+            if (userOptional.isEmpty()) {
                 String message = """
                         Ссылка для восстановления пароля устарела.
                         <a href=
                         \\"/auth/restore\\">Запросить ссылку снова</a>""";
                 errors.put("code", message);
             }
-            if (!captchaCode.getCode().equals(passwordRequest.getCaptcha())) {
+            if (!isCaptchaCodeEqual) {
                 errors.put("captcha", "Код с картинки введён неверно");
             }
         }
@@ -217,13 +219,5 @@ public class UserServiceImpl implements UserService {
                 .findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
         return new LoginResponse(true, mapper.toUserDto(currentUser));
-    }
-
-    private BufferedImage resizeImage(BufferedImage originalImage) {
-        BufferedImage resizedImage = new BufferedImage(36, 36, BufferedImage.TYPE_INT_RGB);
-        Graphics2D graphics2D = resizedImage.createGraphics();
-        graphics2D.drawImage(originalImage, 0, 0, 36, 36, null);
-        graphics2D.dispose();
-        return resizedImage;
     }
 }

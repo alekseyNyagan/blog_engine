@@ -10,7 +10,6 @@ import java.util.List;
 
 public class SecurityUser implements UserDetails {
 
-    private int userID;
     private final String username;
     private final String password;
     private final List<SimpleGrantedAuthority> authorities;
@@ -65,13 +64,5 @@ public class SecurityUser implements UserDetails {
                 true,
                 true,
                 user.getRole().getAuthorities());
-    }
-
-    public int getUserID() {
-        return userID;
-    }
-
-    public void setUserID(int userID) {
-        this.userID = userID;
     }
 }

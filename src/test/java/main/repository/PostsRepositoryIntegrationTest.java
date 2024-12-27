@@ -24,14 +24,11 @@ class PostsRepositoryIntegrationTest {
     @Autowired
     PostsRepository postsRepository;
 
-    @Autowired
-    UsersRepository usersRepository;
-
     @Test
     @DisplayName("Should return posts count by moderation status")
     void shouldReturnPostsCountByModerationStatus() {
         assertThat(postsRepository.countPostsByModerationStatus(ModerationStatus.NEW)).isEqualTo(1);
-        assertThat(postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED)).isEqualTo(0);
+        assertThat(postsRepository.countPostsByModerationStatus(ModerationStatus.DECLINED)).isZero();
         assertThat(postsRepository.countPostsByModerationStatus(ModerationStatus.ACCEPTED)).isEqualTo(12);
     }
 
@@ -44,20 +41,6 @@ class PostsRepositoryIntegrationTest {
     @Test
     @DisplayName("Should return list of calenderDTO by year")
     void shouldReturnCountPostsByYear() {
-        assertThat(postsRepository.countPostsByYear(2024).size()).isEqualTo(2);
-    }
-
-    @Test
-    @DisplayName("Should increment view count")
-    void shouldIncrementViewCount() {
-        postsRepository.incrementViewCount(1);
-        assertThat(postsRepository.findById(1).get().getViewCount()).isEqualTo(101);
-    }
-
-    @Test
-    @DisplayName("Should update moderation status")
-    void shouldUpdateModerationStatus() {
-        postsRepository.updateModerationStatus(ModerationStatus.ACCEPTED, 1, 2);
-        assertThat(postsRepository.findById(2).get().getModerationStatus()).isEqualTo(ModerationStatus.ACCEPTED);
+        assertThat(postsRepository.countPostsByYear(2024)).hasSize(2);
     }
 }

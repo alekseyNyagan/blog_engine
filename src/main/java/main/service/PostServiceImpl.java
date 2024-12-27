@@ -118,11 +118,13 @@ public class PostServiceImpl implements PostService {
     public CurrentPostDto getPostById(int id) {
         Post post = postsRepository.findById(id).orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         if (SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken) {
-            postsRepository.incrementViewCount(id);
+            post.setViewCount(post.getViewCount() + 1);
+            postsRepository.save(post);
         } else {
             main.model.User authUser = getAuthUser();
             if (!post.getUser().equals(authUser) && authUser.getIsModerator() != 1) {
-                postsRepository.incrementViewCount(id);
+                post.setViewCount(post.getViewCount() + 1);
+                postsRepository.save(post);
             }
         }
         return postMapper.toCurrentPostDto(post);
@@ -185,13 +187,20 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public ResultResponse like(PostVoteRequest postVoteRequest) {
-        return createPostVote(postVoteRequest, (byte) 1, (byte) -1);
-    }
-
-    @Override
-    public ResultResponse dislike(PostVoteRequest postVoteRequest) {
-        return createPostVote(postVoteRequest, (byte) -1, (byte) 1);
+    public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue) {
+        main.model.User currentUser = getAuthUser();
+        Post post = postsRepository.findById(postVoteRequest.getPostId()).
+                orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
+        Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
+        postVote.ifPresentOrElse(pv -> {
+                    if (pv.getValue() != postVoteValue) {
+                        pv.setValue(postVoteValue);
+                        pv.setTime(LocalDateTime.now());
+                        postVotesRepository.save(pv);
+                    }
+                },
+                () -> postVotesRepository.save(new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue)));
+        return new ResultResponse(true);
     }
 
     @Override
@@ -211,13 +220,14 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         main.model.User moderator = getAuthUser();
         String decision = moderationRequest.getDecision();
-        Integer postId = post.getId();
         Integer moderatorId = moderator.getId();
         if (decision.equals("accept")) {
-            postsRepository.updateModerationStatus(ModerationStatus.ACCEPTED, moderatorId, postId);
+            post.setModerationStatus(ModerationStatus.ACCEPTED);
         } else {
-            postsRepository.updateModerationStatus(ModerationStatus.DECLINED, moderatorId, postId);
+            post.setModerationStatus(ModerationStatus.DECLINED);
         }
+        post.setModeratorId(moderatorId);
+        postsRepository.save(post);
         return new ResultResponse(true);
     }
 
@@ -245,54 +255,6 @@ public class PostServiceImpl implements PostService {
         errorsResponse.setResult(false);
         errorsResponse.setErrors(errors);
         return errorsResponse;
-    }
-
-    private ResultResponse createPostVote(PostVoteRequest postVoteRequest, byte postVoteValue, byte currentPostVoteValue) {
-        main.model.User currentUser = getAuthUser();
-        Post post = postsRepository.findById(postVoteRequest.getPostId()).
-                orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
-        if (postVote.isEmpty()) {
-            PostVote newPostVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
-            postVotesRepository.save(newPostVote);
-        } else if (postVote.get().getValue() == currentPostVoteValue) {
-            postVotesRepository.updatePostVote(postVoteValue, currentUser, post);
-        }
-        return new ResultResponse(true);
-    }
-
-    private Post createPost(PostRequest postRequest) {
-        main.model.User currentUser = getAuthUser();
-        Post post = new Post();
-        List<Tag> tags = new ArrayList<>();
-        postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
-        post.setIsActive(postRequest.getActive());
-        post.setTitle(postRequest.getTitle());
-        post.setText(postRequest.getText());
-        post.setUser(currentUser);
-        post.setTags(tags);
-        if (globalSettingsService.getGlobalSettings().isPostPremoderation()) {
-            if (currentUser.getIsModerator() == 1) {
-                post.setModerationStatus(ModerationStatus.ACCEPTED);
-            } else {
-                post.setModerationStatus(ModerationStatus.NEW);
-            }
-        } else {
-            post.setModerationStatus(ModerationStatus.ACCEPTED);
-        }
-        LocalDateTime now = LocalDateTime.now();
-        if (postRequest.getTimestamp() <= Timestamp.valueOf(now).getTime()) {
-            post.setTime(now);
-        } else {
-            post.setTime(new Timestamp(postRequest.getTimestamp()).toLocalDateTime());
-        }
-        return post;
-    }
-
-    private Post createPost(int id, PostRequest postRequest) {
-        Post post = createPost(postRequest);
-        post.setId(id);
-        return post;
     }
 
     private main.model.User getAuthUser() {

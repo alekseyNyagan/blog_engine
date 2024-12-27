@@ -110,13 +110,13 @@ public class ApiPostController {
     @PostMapping("/like")
     @PreAuthorize("hasAuthority('user:write')")
     public ResultResponse like(@RequestBody @Parameter(description = "Request body for making post like") PostVoteRequest postVoteRequest) {
-        return postService.like(postVoteRequest);
+        return postService.makePostVote(postVoteRequest, (byte) 1);
     }
 
     @Operation(summary = "Make dislike")
     @PostMapping("/dislike")
     @PreAuthorize("hasAuthority('user:write')")
     public ResultResponse dislike(@RequestBody @Parameter(description = "Request body for making post dislike") PostVoteRequest postVoteRequest) {
-        return postService.dislike(postVoteRequest);
+        return postService.makePostVote(postVoteRequest, (byte) -1);
     }
 }

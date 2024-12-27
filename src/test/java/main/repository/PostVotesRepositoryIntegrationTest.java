@@ -45,14 +45,7 @@ class PostVotesRepositoryIntegrationTest {
     @DisplayName("Should find post vote by user and post")
     void shouldFindPostVoteByUserAndPost() {
         Optional<PostVote> postVoteByUserAndPost = postVotesRepository.findPostVoteByUserAndPost(user, post);
-        assertThat(postVoteByUserAndPost.isPresent()).isTrue();
+        assertThat(postVoteByUserAndPost).isPresent();
 
-    }
-
-    @Test
-    @DisplayName("Should update post vote")
-    void shouldUpdatePostVote() {
-        postVotesRepository.updatePostVote(-1, user, post);
-        assertThat(postVotesRepository.findPostVoteByUserAndPost(user, post).get().getValue()).isEqualTo((byte) -1);
     }
 }

@@ -20,8 +20,7 @@ public interface PostService {
     PostsResponse getMyPosts(int offset, int limit, String status);
     ResultResponse addPost(PostRequest postRequest);
     ResultResponse updatePost(int id, PostRequest postRequest);
-    ResultResponse like(PostVoteRequest postVoteRequest);
-    ResultResponse dislike(PostVoteRequest postVoteRequest);
+    ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue);
     StatisticsResponse getMyStatistic();
     StatisticsResponse getAllStatistic();
     ResultResponse moderation(ModerationRequest moderationRequest);

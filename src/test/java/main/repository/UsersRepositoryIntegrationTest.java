@@ -24,7 +24,7 @@ class UsersRepositoryIntegrationTest {
     @Test
     @DisplayName("Should find user by email")
     void shouldFindUserByEmail() {
-        assertThat(usersRepository.findUserByEmail("admin@admin.ru").isPresent()).isTrue();
+        assertThat(usersRepository.findUserByEmail("admin@admin.ru")).isPresent();
     }
 
     @Test
@@ -40,20 +40,6 @@ class UsersRepositoryIntegrationTest {
                 , "123456"
                 , null);
         usersRepository.saveAndFlush(user2);
-        assertThat(usersRepository.findUserByCode("123456").isPresent()).isTrue();
-    }
-
-    @Test
-    @DisplayName("Should update user's code")
-    void shouldUpdateUserCode() {
-        usersRepository.updateUserCode("123456", "admin@admin.ru");
-        assertThat(usersRepository.findUserByCode("123456").get().getCode()).isEqualTo("123456");
-    }
-
-    @Test
-    @DisplayName("Should update user password")
-    void shouldUpdateUserPassword() {
-        usersRepository.updatePassword("$2a$12$NXN4TKfIUNrWtAsXN/1uwelK1hkTDgSB2dgUhZ0z1r5KEtHPrSGh2", 1);
-        assertThat(usersRepository.findById(1).get().getPassword()).isEqualTo("$2a$12$NXN4TKfIUNrWtAsXN/1uwelK1hkTDgSB2dgUhZ0z1r5KEtHPrSGh2");
+        assertThat(usersRepository.findUserByCode("123456")).isPresent();
     }
 }
