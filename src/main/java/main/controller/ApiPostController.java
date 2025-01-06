@@ -8,6 +8,7 @@ import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
 import main.dto.CurrentPostDto;
+import main.service.strategy.enums.FilterMode;
 import main.service.PostServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -31,7 +32,7 @@ public class ApiPostController {
     @GetMapping("")
     public ResponseEntity<PostsResponse> getPosts(@RequestParam @Parameter(description = "Offset for pagination") int offset
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
-            , @RequestParam @Parameter(description = "Sort mode") String mode) {
+            , @RequestParam @Parameter(description = "Sort mode") FilterMode mode) {
         return new ResponseEntity<>(postService.getPosts(offset, limit, mode), HttpStatus.OK);
     }
 
@@ -41,7 +42,7 @@ public class ApiPostController {
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
             , @RequestParam @Parameter(description = "Query for search") String query) {
         if (query.isBlank()) {
-            return new ResponseEntity<>(postService.getPosts(offset, limit, "recent"), HttpStatus.OK);
+            return new ResponseEntity<>(postService.getPosts(offset, limit, FilterMode.RECENT), HttpStatus.OK);
         } else {
             return new ResponseEntity<>(postService.getPostsByQuery(offset, limit, query), HttpStatus.OK);
         }

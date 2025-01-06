@@ -5,12 +5,13 @@ import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
 import main.dto.CurrentPostDto;
+import main.service.strategy.enums.FilterMode;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 
 public interface PostService {
-    PostsResponse getPosts(int offset, int limit, String mode);
+    PostsResponse getPosts(int offset, int limit, FilterMode mode);
     PostsResponse getPostsByQuery(int offset, int limit, String query);
     PostsResponse getPostsByDate(int offset, int limit, String date);
     PostsResponse getPostsByTag(int offset, int limit, String tag);

@@ -14,13 +14,14 @@ import main.model.enums.ModerationStatus;
 import main.repository.PostVotesRepository;
 import main.repository.PostsRepository;
 import main.repository.UsersRepository;
+import main.service.strategy.enums.FilterMode;
+import main.service.strategy.filter.FilterStrategy;
 import main.utils.RandomUtil;
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
@@ -46,6 +47,7 @@ public class PostServiceImpl implements PostService {
     private final PostsRepository postsRepository;
     private final PostVotesRepository postVotesRepository;
     private final PostMapper postMapper;
+    private static final EnumMap<FilterMode, FilterStrategy> filterStrategyMap = new EnumMap<>(FilterMode.class);
 
     @Autowired
     public PostServiceImpl(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository,
@@ -56,30 +58,14 @@ public class PostServiceImpl implements PostService {
         this.postVotesRepository = postVotesRepository;
     }
 
+    public static void addFilterStrategy(FilterMode mode, FilterStrategy filterStrategy) {
+        filterStrategyMap.put(mode, filterStrategy);
+    }
+
     @Override
-    public PostsResponse getPosts(int offset, int limit, String mode) {
-        Page<Post> posts = Page.empty();
+    public PostsResponse getPosts(int offset, int limit, FilterMode mode) {
         int pageNumber = offset / POSTS_ON_PAGE;
-        switch (mode) {
-            case "recent" -> {
-                Sort dateSort = Sort.by(Sort.Direction.DESC, "time");
-                Pageable page = PageRequest.of(pageNumber, limit, dateSort);
-                posts = postsRepository.findAllByIsActiveAndModerationStatus(page);
-            }
-            case "popular" -> {
-                Pageable page = PageRequest.of(pageNumber, limit);
-                posts = postsRepository.findAllByPostCommentCount(page);
-            }
-            case "best" -> {
-                Pageable page = PageRequest.of(pageNumber, limit);
-                posts = postsRepository.findAllLikedPosts(page);
-            }
-            case "early" -> {
-                Sort dateSort = Sort.by(Sort.Direction.ASC, "time");
-                Pageable page = PageRequest.of(pageNumber, limit, dateSort);
-                posts = postsRepository.findAllByIsActiveAndModerationStatus(page);
-            }
-        }
+        Page<Post> posts = filterStrategyMap.get(mode).execute(pageNumber, limit);
         List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
         return new PostsResponse(posts.getTotalElements(), postDtos);
     }
@@ -156,9 +142,7 @@ public class PostServiceImpl implements PostService {
     public PostsResponse getMyPosts(int offset, int limit, String status) {
         Page<Post> posts = Page.empty();
         int pageNumber = offset / POSTS_ON_PAGE;
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = user.getUsername();
-        main.model.User currentUser = usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not fount"));
+        main.model.User currentUser = getAuthUser();
         Pageable page = PageRequest.of(pageNumber, limit);
         switch (status) {
             case "inactive" -> posts = postsRepository.findPostsByUserAndIsActive(currentUser, (byte) 0, page);
@@ -219,9 +203,8 @@ public class PostServiceImpl implements PostService {
         Post post = postsRepository.findById(moderationRequest.getPostId())
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         main.model.User moderator = getAuthUser();
-        String decision = moderationRequest.getDecision();
         Integer moderatorId = moderator.getId();
-        if (decision.equals("accept")) {
+        if (moderationRequest.getDecision().equals("accept")) {
             post.setModerationStatus(ModerationStatus.ACCEPTED);
         } else {
             post.setModerationStatus(ModerationStatus.DECLINED);
