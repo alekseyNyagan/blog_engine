@@ -28,6 +28,8 @@ services:
       test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
       retries: 10
       timeout: 5s
+    ports:
+      - "3306:3306"
 
   flyway:
     container_name: my-flyway

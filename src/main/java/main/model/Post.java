@@ -69,7 +69,7 @@ public class Post extends AbstractEntity {
     @ToString.Exclude
     private List<PostVote> votes;
 
-    @ManyToMany(cascade = CascadeType.ALL)
+    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
             name = "tag2post"
             , joinColumns = @JoinColumn(name = "post_id")
