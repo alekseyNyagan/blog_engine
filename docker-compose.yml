@@ -18,7 +18,7 @@ services:
       - GMAIL_PASSWORD=
 
   db:
-    image: mysql:8.0.33
+    image: mysql:9.2.0
     container_name: db
     environment:
       - MYSQL_ROOT_PASSWORD=testtest
