@@ -78,7 +78,7 @@ public abstract class PostMapperDelegate implements PostMapper {
         post.setTags(tags);
         post.setModerationStatus(ModerationStatus.ACCEPTED);
         post.setTime(now);
-        if (globalSettingsService.getGlobalSettings().isPostPremoderation() && currentUser.getIsModerator() != 1) {
+        if (Boolean.TRUE.equals(globalSettingsService.getGlobalSettings().get("POST_PREMODERATION")) && currentUser.getIsModerator() != 1) {
             post.setModerationStatus(ModerationStatus.NEW);
         }
         if (postRequest.getTimestamp() >= Timestamp.valueOf(now).getTime()) {

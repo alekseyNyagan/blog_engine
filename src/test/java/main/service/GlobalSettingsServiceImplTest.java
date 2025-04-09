@@ -1,7 +1,6 @@
 package main.service;
 
 
-import main.dto.GlobalSettingsDto;
 import main.model.GlobalSetting;
 import main.repository.GlobalSettingsRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -13,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,18 +36,18 @@ class GlobalSettingsServiceImplTest {
     @Test
     @DisplayName("Should retrieve global settings successfully")
     void testGetGlobalSettings_Success() {
-        GlobalSetting multiuserModeSetting = new GlobalSetting("MULTIUSER_MODE", "YES");
-        GlobalSetting postPremoderationSetting = new GlobalSetting("POST_PREMODERATION", "NO");
-        GlobalSetting statisticsIsPublicSetting = new GlobalSetting("STATISTICS_IS_PUBLIC", "YES");
+        GlobalSetting multiuserModeSetting = new GlobalSetting("MULTIUSER_MODE", true);
+        GlobalSetting postPremoderationSetting = new GlobalSetting("POST_PREMODERATION", false);
+        GlobalSetting statisticsIsPublicSetting = new GlobalSetting("STATISTICS_IS_PUBLIC", true);
 
         List<GlobalSetting> settingsList = Arrays.asList(multiuserModeSetting, postPremoderationSetting, statisticsIsPublicSetting);
         when(globalSettingsRepository.findAll()).thenReturn(settingsList);
 
-        GlobalSettingsDto response = globalSettingsService.getGlobalSettings();
+        Map<String, Boolean> response = globalSettingsService.getGlobalSettings();
 
-        assertTrue(response.isMultiuserMode());
-        assertFalse(response.isPostPremoderation());
-        assertTrue(response.isStatisticsIsPublic());
+        assertTrue(response.get("MULTIUSER_MODE"));
+        assertFalse(response.get("POST_PREMODERATION"));
+        assertTrue(response.get("STATISTICS_IS_PUBLIC"));
     }
 
     /**
@@ -60,23 +60,23 @@ class GlobalSettingsServiceImplTest {
     @Test
     @DisplayName("Should update global settings with valid data")
     void testUpdateGlobalSettings_Success() {
-        GlobalSetting multiuserModeSetting = new GlobalSetting("MULTIUSER_MODE", "NO");
-        GlobalSetting postPremoderationSetting = new GlobalSetting("POST_PREMODERATION", "YES");
-        GlobalSetting statisticsIsPublicSetting = new GlobalSetting("STATISTICS_IS_PUBLIC", "NO");
+        GlobalSetting multiuserModeSetting = new GlobalSetting("MULTIUSER_MODE", false);
+        GlobalSetting postPremoderationSetting = new GlobalSetting("POST_PREMODERATION", true);
+        GlobalSetting statisticsIsPublicSetting = new GlobalSetting("STATISTICS_IS_PUBLIC", false);
 
         List<GlobalSetting> settingsList = Arrays.asList(multiuserModeSetting, postPremoderationSetting, statisticsIsPublicSetting);
         when(globalSettingsRepository.findAll()).thenReturn(settingsList);
 
-        GlobalSettingsDto settingsRequest = new GlobalSettingsDto();
-        settingsRequest.setMultiuserMode(true);
-        settingsRequest.setPostPremoderation(false);
-        settingsRequest.setStatisticsIsPublic(true);
+        Map<String, Boolean> settingsMap = Map.of(
+                "MULTIUSER_MODE", true,
+                "POST_PREMODERATION", false,
+                "STATISTICS_IS_PUBLIC", true);
 
-        globalSettingsService.updateGlobalSettings(settingsRequest);
+        globalSettingsService.updateGlobalSettings(settingsMap);
 
         verify(globalSettingsRepository, times(1)).saveAll(any());
-        assertEquals("YES", multiuserModeSetting.getValue());
-        assertEquals("NO", postPremoderationSetting.getValue());
-        assertEquals("YES", statisticsIsPublicSetting.getValue());
+        assertTrue(multiuserModeSetting.getValue());
+        assertFalse(postPremoderationSetting.getValue());
+        assertTrue(statisticsIsPublicSetting.getValue());
     }
 }

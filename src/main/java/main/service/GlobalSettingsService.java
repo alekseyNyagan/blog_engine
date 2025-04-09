@@ -1,8 +1,8 @@
 package main.service;
 
-import main.dto.GlobalSettingsDto;
+import java.util.Map;
 
 public interface GlobalSettingsService {
-    GlobalSettingsDto getGlobalSettings();
-    void updateGlobalSettings(GlobalSettingsDto globalSettingsDto);
+    Map<String, Boolean> getGlobalSettings();
+    void updateGlobalSettings(Map<String, Boolean> globalSettings);
 }

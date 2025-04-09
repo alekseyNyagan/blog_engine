@@ -8,7 +8,6 @@ import main.api.request.CommentRequest;
 import main.api.request.ModerationRequest;
 import main.api.request.UpdateProfileRequest;
 import main.api.response.*;
-import main.dto.GlobalSettingsDto;
 import main.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -19,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.Map;
 
 @Tag(name = "General controller", description = "Controller for operations that do not relate to post and authorization operations")
 @RestController
@@ -58,7 +58,7 @@ public class ApiGeneralController {
 
     @Operation(summary = "Get global settings", description = "Get settings for entire blog")
     @GetMapping("/settings")
-    public GlobalSettingsDto getGlobalSettings() {
+    public Map<String, Boolean> getGlobalSettings() {
         return globalSettingsService.getGlobalSettings();
     }
 
@@ -87,7 +87,7 @@ public class ApiGeneralController {
     @Operation(summary = "Get entire blog statistics")
     @GetMapping("/statistics/all")
     public ResponseEntity<StatisticsResponse> getAllStatistic() {
-        if (!globalSettingsService.getGlobalSettings().isMultiuserMode() && userService.getUser().getIsModerator() != 1) {
+        if (Boolean.TRUE.equals(!globalSettingsService.getGlobalSettings().get("MULTIUSER_MODE")) && userService.getUser().getIsModerator() != 1) {
             return ResponseEntity.status(401).build();
         } else {
             return ResponseEntity.ok(postService.getAllStatistic());
@@ -126,8 +126,8 @@ public class ApiGeneralController {
     @PreAuthorize("hasAuthority('user:moderate')")
     public void updateGlobalSettings(@RequestBody @Parameter(description = """
             Request body with settings should be updated
-            """) GlobalSettingsDto globalSettingsDto) {
-        globalSettingsService.updateGlobalSettings(globalSettingsDto);
+            """) Map<String, Boolean> globalSettings) {
+        globalSettingsService.updateGlobalSettings(globalSettings);
     }
 
     @Operation(summary = "Upload image on server")
