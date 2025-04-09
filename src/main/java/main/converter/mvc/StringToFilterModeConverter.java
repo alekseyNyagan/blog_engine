@@ -1,4 +1,4 @@
-package main.converter;
+package main.converter.mvc;
 
 
 import main.service.strategy.enums.FilterMode;

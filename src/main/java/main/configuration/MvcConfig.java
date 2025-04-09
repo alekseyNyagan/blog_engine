@@ -1,6 +1,6 @@
 package main.configuration;
 
-import main.converter.StringToFilterModeConverter;
+import main.converter.mvc.StringToFilterModeConverter;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
