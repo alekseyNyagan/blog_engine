@@ -19,6 +19,12 @@ import java.util.Base64;
 @Service
 public class CaptchaCodeServiceImpl implements CaptchaCodeService {
 
+    private static final int CAPTCHA_WIDTH = 100;
+    private static final int CAPTCHA_HEIGHT = 35;
+    private static final int CODE_START_INDEX = 0;
+    private static final int CODE_END_INDEX = 5;
+    private static final String PNG_FILE_EXTENSION = "png";
+    private static final String ENCODED_STRING_PREFIX = "data:image/png;base64, ";
     @Value("${time.expire.captcha}")
     private int captchaExpireTime;
     private final CaptchaCodeRepository captchaCodeRepository;
@@ -33,21 +39,24 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
         CaptchaCodeResponse captchaCodeResponse = new CaptchaCodeResponse();
         try {
             Cage cage = new Cage();
-            String code = cage.getTokenGenerator().next().substring(0, 5);
+            String code = cage.getTokenGenerator().next().substring(CODE_START_INDEX, CODE_END_INDEX);
             String secretCode = cage.getTokenGenerator().next();
             CaptchaCode captchaCode = new CaptchaCode(LocalDateTime.now(), code, secretCode);
             captchaCodeRepository.save(captchaCode);
-            BufferedImage bufferedImage = ImageUtil.resizeImage(cage.drawImage(code), 100, 35);
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            ImageIO.write(bufferedImage, "png", byteArrayOutputStream);
-            byte[] image = byteArrayOutputStream.toByteArray();
-            String encodedString = "data:image/png;base64, " + Base64.getEncoder().encodeToString(image);
-            captchaCodeResponse.setImage(encodedString);
+            captchaCodeResponse.setImage(drawImage(cage, code));
             captchaCodeResponse.setSecret(secretCode);
             captchaCodeRepository.deleteAllByTimeBefore(captchaExpireTime);
         } catch (IOException exception) {
             exception.printStackTrace();
         }
         return captchaCodeResponse;
+    }
+
+    private static String drawImage(Cage cage, String code) throws IOException {
+        BufferedImage bufferedImage = ImageUtil.resizeImage(cage.drawImage(code), CAPTCHA_WIDTH, CAPTCHA_HEIGHT);
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        ImageIO.write(bufferedImage, PNG_FILE_EXTENSION, byteArrayOutputStream);
+        byte[] image = byteArrayOutputStream.toByteArray();
+        return ENCODED_STRING_PREFIX + Base64.getEncoder().encodeToString(image);
     }
 }

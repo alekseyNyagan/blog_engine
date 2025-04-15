@@ -5,6 +5,7 @@ import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
 import main.dto.CurrentPostDto;
+import main.model.enums.ModerationStatus;
 import main.service.strategy.enums.FilterMode;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,7 +16,7 @@ public interface PostService {
     PostsResponse getPostsByQuery(int offset, int limit, String query);
     PostsResponse getPostsByDate(int offset, int limit, String date);
     PostsResponse getPostsByTag(int offset, int limit, String tag);
-    PostsResponse getModerationPosts(int offset, int limit, String status);
+    PostsResponse getModerationPosts(int offset, int limit, ModerationStatus status);
     CalendarResponse getCalendar(int year);
     CurrentPostDto getPostById(int id);
     PostsResponse getMyPosts(int offset, int limit, String status);

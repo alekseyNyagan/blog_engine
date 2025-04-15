@@ -20,6 +20,11 @@ public abstract class PostMapperDelegate implements PostMapper {
 
     private static final long SECOND = 1000;
     private static final int ANNOUNCE_LENGTH = 150;
+    private static final byte LIKE_VALUE = 1;
+    private static final byte DISLIKE_VALUE = -1;
+    private static final String POST_PREMODERATION_SETTING = "POST_PREMODERATION";
+    private static final String NON_BREAKING_SPACE = "&nbsp;";
+    private static final String HTML_TAG_REGEX = "<.*?>";
 
     @Autowired
     private UserMapper userMapper;
@@ -33,18 +38,18 @@ public abstract class PostMapperDelegate implements PostMapper {
     @Override
     public PostDto toPostDto(Post post) {
         String text = post.getText();
-        String textWithoutHtmlTags = text.replaceAll("<.*?>", "");
+        String textWithoutHtmlTags = text.replaceAll(HTML_TAG_REGEX, "");
         return PostDto.builder()
                 .id(post.getId())
                 .title(post.getTitle())
                 .viewCount(post.getViewCount())
                 .user(userMapper.toBaseUserDto(post.getUser()))
-                .likeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count())
-                .dislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count())
+                .likeCount(getPostVotesCount(post, LIKE_VALUE))
+                .dislikeCount(getPostVotesCount(post, DISLIKE_VALUE))
                 .commentCount(post.getComments().size())
-                .timestamp(Timestamp.valueOf(post.getTime()).getTime() / SECOND)
+                .timestamp(getTimestamp(post))
                 .announce(textWithoutHtmlTags.length() < ANNOUNCE_LENGTH ? textWithoutHtmlTags
-                        : textWithoutHtmlTags.replace("&nbsp;", " ").substring(0, ANNOUNCE_LENGTH) + "...")
+                        : textWithoutHtmlTags.replace(NON_BREAKING_SPACE, " ").substring(0, ANNOUNCE_LENGTH) + "...")
                 .build();
     }
 
@@ -55,11 +60,11 @@ public abstract class PostMapperDelegate implements PostMapper {
                 .title(post.getTitle())
                 .viewCount(post.getViewCount())
                 .user(userMapper.toBaseUserDto(post.getUser()))
-                .likeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == 1).count())
-                .dislikeCount((int) post.getVotes().stream().filter(postVote -> postVote.getValue() == -1).count())
+                .likeCount(getPostVotesCount(post, LIKE_VALUE))
+                .dislikeCount(getPostVotesCount(post, DISLIKE_VALUE))
                 .comments(post.getComments().stream()
                         .map(postCommentMapper::toPostCommentDto).toList())
-                .timestamp(Timestamp.valueOf(post.getTime()).getTime() / SECOND)
+                .timestamp(getTimestamp(post))
                 .tags(post.getTags().stream().map(Tag::getName).toList())
                 .isActive(post.getIsActive() == 1)
                 .build();
@@ -78,7 +83,7 @@ public abstract class PostMapperDelegate implements PostMapper {
         post.setTags(tags);
         post.setModerationStatus(ModerationStatus.ACCEPTED);
         post.setTime(now);
-        if (Boolean.TRUE.equals(globalSettingsService.getGlobalSettings().get("POST_PREMODERATION")) && currentUser.getIsModerator() != 1) {
+        if (Boolean.TRUE.equals(globalSettingsService.getGlobalSettings().get(POST_PREMODERATION_SETTING)) && currentUser.getIsModerator() != 1) {
             post.setModerationStatus(ModerationStatus.NEW);
         }
         if (postRequest.getTimestamp() >= Timestamp.valueOf(now).getTime()) {
@@ -92,5 +97,13 @@ public abstract class PostMapperDelegate implements PostMapper {
         Post post = fromPostRequestToPost(postRequest, currentUser);
         post.setId(id);
         return post;
+    }
+
+    private int getPostVotesCount(Post post, byte voteValue) {
+        return (int) post.getVotes().stream().filter(vote -> vote.getValue() == voteValue).count();
+    }
+
+    private long getTimestamp(Post post) {
+        return Timestamp.valueOf(post.getTime()).getTime() / SECOND;
     }
 }

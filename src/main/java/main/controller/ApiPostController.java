@@ -8,6 +8,7 @@ import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
 import main.dto.CurrentPostDto;
+import main.model.enums.ModerationStatus;
 import main.service.strategy.enums.FilterMode;
 import main.service.PostServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +76,7 @@ public class ApiPostController {
     @PreAuthorize("hasAuthority('user:moderate')")
     public ResponseEntity<PostsResponse> getModerationPosts(@RequestParam @Parameter(description = "Offset for pagination") int offset
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
-            , @RequestParam @Parameter(description = "Moderation status of posts") String status) {
+            , @RequestParam @Parameter(description = "Moderation status of posts") ModerationStatus status) {
         return new ResponseEntity<>(postService.getModerationPosts(offset, limit, status), HttpStatus.OK);
     }
 

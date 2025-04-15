@@ -8,9 +8,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.text.MessageFormat;
+
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
 
+    private static final String USER_NOT_FOUND_MESSAGE_PATTERN = "user {0} not found";
     private final UsersRepository usersRepository;
 
     @Autowired
@@ -20,7 +23,8 @@ public class UserDetailsServiceImpl implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        User user = usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not found"));
+        User user = usersRepository.findUserByEmail(email).orElseThrow(() ->
+                new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
         return SecurityUser.fromUser(user);
     }
 }

@@ -1,6 +1,6 @@
 package main.configuration;
 
-import main.converter.mvc.StringToFilterModeConverter;
+import main.converter.mvc.StringToEnumConverterFactory;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
@@ -18,6 +18,6 @@ public class MvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addFormatters(FormatterRegistry registry) {
-        registry.addConverter(new StringToFilterModeConverter());
+        registry.addConverterFactory(new StringToEnumConverterFactory());
     }
 }

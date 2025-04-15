@@ -31,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -43,6 +44,23 @@ public class PostServiceImpl implements PostService {
     private static final int MAX_FILE_SIZE = 5_242_880;
     private static final int POSTS_ON_PAGE = 10;
     private static final String POST_NOT_FOUND_ERROR_MESSAGE = "Пост не найден";
+    private static final String DATE_FORMAT = "yyyy-MM-dd";
+    private static final byte MODERATOR_VALUE = 1;
+    private static final byte POST_IS_ACTIVE_VALUE = 1;
+    private static final byte POST_IS_NOT_ACTIVE_VALUE = 0;
+    private static final String INACTIVE_POST_STATUS = "inactive";
+    private static final String PENDING_POST_STATUS = "pending";
+    private static final String DECLINED_POST_STATUS = "declined";
+    private static final String PUBLISHED_POST_STATUS = "published";
+    private static final String ACCEPT_DECISION = "accept";
+    private static final String PNG_FILE_EXTENSION = "png";
+    private static final String JPG_FILE_EXTENSION = "jpg";
+    private static final String FILE_SIZE_ERROR_MESSAGE = "Размер файла превышает допустимый размер";
+    private static final String FILE_EXTENSION_ERROR_MESSAGE = "Неверный формат изображения! Изображение должно быть в формате png или jpg";
+    private static final String UPLOAD_FOLDER_PATH = "/upload/ab/cd/ef/";
+    private static final int LENGTH_OF_HASH = 5;
+    private static final String USER_NOT_FOUND_MESSAGE_PATTERN = "user {0} not found";
+    private static final String IMAGE_ERROR_KEY = "image";
     private final UsersRepository usersRepository;
     private final PostsRepository postsRepository;
     private final PostVotesRepository postVotesRepository;
@@ -64,52 +82,45 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostsResponse getPosts(int offset, int limit, FilterMode mode) {
-        int pageNumber = offset / POSTS_ON_PAGE;
-        Page<Post> posts = filterStrategyMap.get(mode).execute(pageNumber, limit);
-        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
-        return new PostsResponse(posts.getTotalElements(), postDtos);
+        Page<Post> posts = filterStrategyMap.get(mode).execute(getPageNumber(offset), limit);
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
     }
 
     @Override
     public PostsResponse getPostsByQuery(int offset, int limit, String query) {
-        int pageNumber = offset / POSTS_ON_PAGE;
-        Pageable page = PageRequest.of(pageNumber, limit);
+        Pageable page = PageRequest.of(getPageNumber(offset), limit);
         Page<Post> posts = postsRepository.findPostsByIsActiveAndModerationStatusAndTextLike(query, page);
-        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
-        return new PostsResponse(posts.getTotalElements(), postDtos);
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
     }
 
     @Override
     public PostsResponse getPostsByDate(int offset, int limit, String date) {
-        int pageNumber = offset / POSTS_ON_PAGE;
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         LocalDateTime dayStart = LocalDate.parse(date, formatter).atStartOfDay();
         LocalDateTime dayEnd = dayStart.plusDays(1);
-        Pageable page = PageRequest.of(pageNumber, limit);
+        Pageable page = PageRequest.of(getPageNumber(offset), limit);
         Page<Post> posts = postsRepository.findPostsByIsActiveAndModerationStatusAndTime(dayStart, dayEnd, page);
-        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
-        return new PostsResponse(posts.getTotalElements(), postDtos);
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
     }
 
     @Override
     public PostsResponse getPostsByTag(int offset, int limit, String tag) {
-        int pageNumber = offset / POSTS_ON_PAGE;
-        Pageable page = PageRequest.of(pageNumber, limit);
+        Pageable page = PageRequest.of(getPageNumber(offset), limit);
         Page<Post> posts = postsRepository.findPostsByTag(tag, page);
-        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
-        return new PostsResponse(posts.getTotalElements(), postDtos);
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
     }
 
     @Override
     public CurrentPostDto getPostById(int id) {
         Post post = postsRepository.findById(id).orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
+        int viewCount = post.getViewCount();
         if (SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken) {
-            post.setViewCount(post.getViewCount() + 1);
+            post.setViewCount(++viewCount);
             postsRepository.save(post);
         } else {
             main.model.User authUser = getAuthUser();
-            if (!post.getUser().equals(authUser) && authUser.getIsModerator() != 1) {
-                post.setViewCount(post.getViewCount() + 1);
+            if (!post.getUser().equals(authUser) && authUser.getIsModerator() != MODERATOR_VALUE) {
+                post.setViewCount(++viewCount);
                 postsRepository.save(post);
             }
         }
@@ -117,17 +128,10 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostsResponse getModerationPosts(int offset, int limit, String status) {
-        Page<Post> posts = Page.empty();
-        int pageNumber = offset / POSTS_ON_PAGE;
-        Pageable page = PageRequest.of(pageNumber, limit);
-        switch (status) {
-            case "new" -> posts = postsRepository.findPostByModerationStatus(ModerationStatus.NEW, page);
-            case "declined" -> posts = postsRepository.findPostByModerationStatus(ModerationStatus.DECLINED, page);
-            case "accepted" -> posts = postsRepository.findPostByModerationStatus(ModerationStatus.ACCEPTED, page);
-        }
-        List<PostDto> postDtos = posts.stream().map(postMapper::toPostDto).toList();
-        return new PostsResponse(posts.getTotalElements(), postDtos);
+    public PostsResponse getModerationPosts(int offset, int limit, ModerationStatus status) {
+        Pageable page = PageRequest.of(getPageNumber(offset), limit);
+        Page<Post> posts = postsRepository.findPostByModerationStatus(status, page);
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
     }
 
     @Override
@@ -141,19 +145,18 @@ public class PostServiceImpl implements PostService {
     @Override
     public PostsResponse getMyPosts(int offset, int limit, String status) {
         Page<Post> posts = Page.empty();
-        int pageNumber = offset / POSTS_ON_PAGE;
         main.model.User currentUser = getAuthUser();
-        Pageable page = PageRequest.of(pageNumber, limit);
+        Pageable page = PageRequest.of(getPageNumber(offset), limit);
         switch (status) {
-            case "inactive" -> posts = postsRepository.findPostsByUserAndIsActive(currentUser, (byte) 0, page);
-            case "pending" -> posts = postsRepository
-                    .findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.NEW, page);
-            case "declined" -> posts = postsRepository
-                    .findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.DECLINED, page);
-            case "published" -> posts = postsRepository
-                    .findPostsByUserAndIsActiveAndModerationStatus(currentUser, (byte) 1, ModerationStatus.ACCEPTED, page);
+            case INACTIVE_POST_STATUS -> posts = postsRepository.findPostsByUserAndIsActive(currentUser, POST_IS_NOT_ACTIVE_VALUE, page);
+            case PENDING_POST_STATUS -> posts = postsRepository
+                    .findPostsByUserAndIsActiveAndModerationStatus(currentUser, POST_IS_ACTIVE_VALUE, ModerationStatus.NEW, page);
+            case DECLINED_POST_STATUS -> posts = postsRepository
+                    .findPostsByUserAndIsActiveAndModerationStatus(currentUser, POST_IS_ACTIVE_VALUE, ModerationStatus.DECLINED, page);
+            case PUBLISHED_POST_STATUS -> posts = postsRepository
+                    .findPostsByUserAndIsActiveAndModerationStatus(currentUser, POST_IS_ACTIVE_VALUE, ModerationStatus.ACCEPTED, page);
         }
-        return new PostsResponse(posts.getTotalElements(), posts.stream().map(postMapper::toPostDto).toList());
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
     }
 
     @Override
@@ -204,7 +207,7 @@ public class PostServiceImpl implements PostService {
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         main.model.User moderator = getAuthUser();
         Integer moderatorId = moderator.getId();
-        if (moderationRequest.getDecision().equals("accept")) {
+        if (moderationRequest.getDecision().equals(ACCEPT_DECISION)) {
             post.setModerationStatus(ModerationStatus.ACCEPTED);
         } else {
             post.setModerationStatus(ModerationStatus.DECLINED);
@@ -217,12 +220,13 @@ public class PostServiceImpl implements PostService {
     @Override
     public Object image(MultipartFile multipartFile) throws IOException {
         String contentType = FilenameUtils.getExtension(multipartFile.getOriginalFilename());
-        if (multipartFile.getSize() < MAX_FILE_SIZE && (contentType.equals("png") || contentType.equals("jpg"))) {
-            String hash = RandomUtil.generateRandomHash(5);
-            String path = "./upload/ab/cd/ef/" + hash + "." + contentType;
-            FileOutputStream outputStream = new FileOutputStream(path);
-            outputStream.write(multipartFile.getBytes());
-            return "/upload/ab/cd/ef/" + hash + "." + contentType;
+        if (contentType != null && multipartFile.getSize() < MAX_FILE_SIZE && (contentType.equals(PNG_FILE_EXTENSION) || contentType.equals(JPG_FILE_EXTENSION))) {
+            String hash = RandomUtil.generateRandomHash(LENGTH_OF_HASH);
+            String path = "." + UPLOAD_FOLDER_PATH + hash + "." + contentType;
+          try (FileOutputStream outputStream = new FileOutputStream(path)) {
+              outputStream.write(multipartFile.getBytes());
+              return UPLOAD_FOLDER_PATH + hash + "." + contentType;
+          }
         } else {
             return getErrorsResponse(multipartFile);
         }
@@ -232,9 +236,9 @@ public class PostServiceImpl implements PostService {
         ErrorsResponse errorsResponse = new ErrorsResponse();
         Map<String, String> errors = new HashMap<>();
         if (multipartFile.getSize() > MAX_FILE_SIZE) {
-            errors.put("image", "Размер файла превышает допустимый размер");
+            errors.put(IMAGE_ERROR_KEY, FILE_SIZE_ERROR_MESSAGE);
         }
-        errors.put("image", "Неверный формат изображения! Изображение должно быть в формате png или jpg");
+        errors.put(IMAGE_ERROR_KEY, FILE_EXTENSION_ERROR_MESSAGE);
         errorsResponse.setResult(false);
         errorsResponse.setErrors(errors);
         return errorsResponse;
@@ -243,6 +247,15 @@ public class PostServiceImpl implements PostService {
     private main.model.User getAuthUser() {
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         String email = user.getUsername();
-        return usersRepository.findUserByEmail(email).orElseThrow(() -> new UsernameNotFoundException("user" + email + "not found"));
+        return usersRepository.findUserByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
+    }
+
+    private int getPageNumber(int offset) {
+        return offset / POSTS_ON_PAGE;
+    }
+
+    private List<PostDto> getPostDtosFromPosts(Page<Post> posts) {
+        return posts.stream().map(postMapper::toPostDto).toList();
     }
 }
