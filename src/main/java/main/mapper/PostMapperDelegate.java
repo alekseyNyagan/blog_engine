@@ -10,15 +10,12 @@ import main.model.enums.ModerationStatus;
 import main.service.GlobalSettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 public abstract class PostMapperDelegate implements PostMapper {
 
-
-    private static final long SECOND = 1000;
     private static final int ANNOUNCE_LENGTH = 150;
     private static final byte LIKE_VALUE = 1;
     private static final byte DISLIKE_VALUE = -1;
@@ -47,7 +44,7 @@ public abstract class PostMapperDelegate implements PostMapper {
                 .likeCount(getPostVotesCount(post, LIKE_VALUE))
                 .dislikeCount(getPostVotesCount(post, DISLIKE_VALUE))
                 .commentCount(post.getComments().size())
-                .timestamp(getTimestamp(post))
+                .timestamp(post.getTime().getEpochSecond())
                 .announce(textWithoutHtmlTags.length() < ANNOUNCE_LENGTH ? textWithoutHtmlTags
                         : textWithoutHtmlTags.replace(NON_BREAKING_SPACE, " ").substring(0, ANNOUNCE_LENGTH) + "...")
                 .build();
@@ -64,7 +61,7 @@ public abstract class PostMapperDelegate implements PostMapper {
                 .dislikeCount(getPostVotesCount(post, DISLIKE_VALUE))
                 .comments(post.getComments().stream()
                         .map(postCommentMapper::toPostCommentDto).toList())
-                .timestamp(getTimestamp(post))
+                .timestamp(post.getTime().getEpochSecond())
                 .tags(post.getTags().stream().map(Tag::getName).toList())
                 .isActive(post.getIsActive() == 1)
                 .build();
@@ -74,7 +71,6 @@ public abstract class PostMapperDelegate implements PostMapper {
     public Post fromPostRequestToPost(PostRequest postRequest, User currentUser) {
         Post post = new Post();
         List<Tag> tags = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
         postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
         post.setIsActive(postRequest.getActive());
         post.setTitle(postRequest.getTitle());
@@ -82,12 +78,9 @@ public abstract class PostMapperDelegate implements PostMapper {
         post.setUser(currentUser);
         post.setTags(tags);
         post.setModerationStatus(ModerationStatus.ACCEPTED);
-        post.setTime(now);
+        post.setTime(Instant.ofEpochSecond(postRequest.getTimestamp()));
         if (Boolean.TRUE.equals(globalSettingsService.getGlobalSettings().get(POST_PREMODERATION_SETTING)) && currentUser.getIsModerator() != 1) {
             post.setModerationStatus(ModerationStatus.NEW);
-        }
-        if (postRequest.getTimestamp() >= Timestamp.valueOf(now).getTime()) {
-            post.setTime(new Timestamp(postRequest.getTimestamp()).toLocalDateTime());
         }
         return post;
     }
@@ -101,9 +94,5 @@ public abstract class PostMapperDelegate implements PostMapper {
 
     private int getPostVotesCount(Post post, byte voteValue) {
         return (int) post.getVotes().stream().filter(vote -> vote.getValue() == voteValue).count();
-    }
-
-    private long getTimestamp(Post post) {
-        return Timestamp.valueOf(post.getTime()).getTime() / SECOND;
     }
 }

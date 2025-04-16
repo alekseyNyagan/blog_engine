@@ -5,8 +5,10 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SourceType;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Setter
 @Getter
@@ -17,9 +19,9 @@ import java.time.LocalDateTime;
 @Table(name = "captcha_codes")
 public class CaptchaCode extends AbstractEntity {
 
-    @Column(name = "time")
-    @NotNull
-    private LocalDateTime time;
+    @Column(name = "time", insertable = false, updatable = false)
+    @CreationTimestamp(source = SourceType.DB)
+    private Instant time;
 
     @Column(name = "code")
     @NotNull

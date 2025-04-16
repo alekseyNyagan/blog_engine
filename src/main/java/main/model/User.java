@@ -1,14 +1,15 @@
 package main.model;
 
-import lombok.*;
-import main.model.enums.Role;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import lombok.*;
+import main.model.enums.Role;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SourceType;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Setter
 @Getter
@@ -23,9 +24,9 @@ public class User extends AbstractEntity {
     @NotNull
     private byte isModerator;
 
-    @Column(name = "reg_time")
-    @NotNull
-    private LocalDateTime regTime;
+    @Column(name = "reg_time", insertable = false, updatable = false)
+    @CreationTimestamp(source = SourceType.DB)
+    private Instant regTime;
 
     @Column(name = "name")
     @NotNull

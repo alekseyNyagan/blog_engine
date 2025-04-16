@@ -1,17 +1,13 @@
 package main.model;
 
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import jakarta.persistence.FetchType;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.SourceType;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Setter
 @Getter
@@ -37,9 +33,9 @@ public class PostComment extends AbstractEntity {
     @ToString.Exclude
     private User user;
 
-    @Column(name = "time")
-    @NotNull
-    private LocalDateTime time;
+    @Column(name = "time", insertable = false, updatable = false)
+    @CreationTimestamp(source = SourceType.DB)
+    private Instant time;
 
     @Column(name = "text")
     @NotNull

@@ -9,6 +9,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,7 +34,7 @@ class UsersRepositoryIntegrationTest {
     void shouldFindUserByCode() {
         User user2 = new User(
                 (byte) 0
-                , LocalDateTime.of(2022, 9, 18, 22, 1, 33)
+                , LocalDateTime.of(2022, 9, 18, 22, 1, 33).toInstant(ZoneOffset.UTC)
                 , "Max"
                 , "max@example.com"
                 , "$2a$12$7GZ5zptWYUt364zNLKaT2ut3XAU29J3hmxM3avVs/bKPjN0fjYECy"

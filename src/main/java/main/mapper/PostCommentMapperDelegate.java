@@ -4,11 +4,7 @@ import main.dto.PostCommentDto;
 import main.model.PostComment;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.sql.Timestamp;
-
 public abstract class PostCommentMapperDelegate implements PostCommentMapper {
-
-    private static final int SECOND = 1000;
 
     @Autowired
     UserMapper userMapper;
@@ -19,7 +15,7 @@ public abstract class PostCommentMapperDelegate implements PostCommentMapper {
                 .id(postComment.getId())
                 .text(postComment.getText())
                 .user(userMapper.toBaseUserDto(postComment.getUser()))
-                .timestamp(Timestamp.valueOf(postComment.getTime()).getTime() / SECOND)
+                .timestamp(postComment.getTime().getEpochSecond())
                 .build();
     }
 }

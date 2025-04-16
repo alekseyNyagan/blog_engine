@@ -1,23 +1,12 @@
 package main.model;
 
 
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import main.model.enums.ModerationStatus;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotNull;
-
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 @Setter
 @Getter
@@ -47,7 +36,7 @@ public class Post extends AbstractEntity {
 
     @Column(name = "time")
     @NotNull
-    private LocalDateTime time;
+    private Instant time;
 
     @Column(name = "title")
     @NotNull

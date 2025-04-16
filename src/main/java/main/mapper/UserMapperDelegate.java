@@ -8,9 +8,9 @@ import main.repository.PostsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.time.LocalDateTime;
-
 public abstract class UserMapperDelegate implements UserMapper {
+
+    private static final byte COMMON_USER_VALUE = 0;
 
     @Autowired
     private PostsRepository postsRepository;
@@ -34,12 +34,12 @@ public abstract class UserMapperDelegate implements UserMapper {
 
     @Override
     public User fromRegistrationRequestToUser(RegistrationRequest registrationRequest) {
-        return new User((byte) 0
-                , LocalDateTime.now()
-                , registrationRequest.getName()
-                , registrationRequest.getEmail()
-                , passwordEncoder.encode(registrationRequest.getPassword())
-                , registrationRequest.getCaptchaSecret()
-                , null);
+        User user = new User();
+        user.setIsModerator(COMMON_USER_VALUE);
+        user.setName(registrationRequest.getName());
+        user.setEmail(registrationRequest.getEmail());
+        user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
+        user.setCode(registrationRequest.getCaptchaSecret());
+        return user;
     }
 }

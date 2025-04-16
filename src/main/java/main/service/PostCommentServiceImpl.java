@@ -14,7 +14,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
-import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 
 @Service
@@ -44,12 +43,10 @@ public class PostCommentServiceImpl implements PostCommentService {
         main.model.User currentUser = usersRepository
                 .findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_ERROR_PATTERN, email)));
-        PostComment postComment = new PostComment(
-                null
-                , post
-                , currentUser
-                , LocalDateTime.now()
-                , commentRequest.getText());
+        PostComment postComment = new PostComment();
+        postComment.setPost(post);
+        postComment.setUser(currentUser);
+        postComment.setText(commentRequest.getText());
         if (commentRequest.getParentId() instanceof Integer parentId) {
             postCommentsRepository.findById(parentId).orElseThrow(() -> new NoSuchElementException(POST_COMMENT_NOT_FOUND_ERROR_MESSAGE));
             postComment.setParentID(parentId);

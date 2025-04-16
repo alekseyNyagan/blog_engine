@@ -13,7 +13,6 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.Base64;
 
 @Service
@@ -41,7 +40,9 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
             Cage cage = new Cage();
             String code = cage.getTokenGenerator().next().substring(CODE_START_INDEX, CODE_END_INDEX);
             String secretCode = cage.getTokenGenerator().next();
-            CaptchaCode captchaCode = new CaptchaCode(LocalDateTime.now(), code, secretCode);
+            CaptchaCode captchaCode = new CaptchaCode();
+            captchaCode.setCode(code);
+            captchaCode.setSecretCode(secretCode);
             captchaCodeRepository.save(captchaCode);
             captchaCodeResponse.setImage(drawImage(cage, code));
             captchaCodeResponse.setSecret(secretCode);
