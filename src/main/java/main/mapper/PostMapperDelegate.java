@@ -55,6 +55,7 @@ public abstract class PostMapperDelegate implements PostMapper {
         return CurrentPostDto.builder()
                 .id(post.getId())
                 .title(post.getTitle())
+                .text(post.getText())
                 .viewCount(post.getViewCount())
                 .user(userMapper.toBaseUserDto(post.getUser()))
                 .likeCount(getPostVotesCount(post, LIKE_VALUE))

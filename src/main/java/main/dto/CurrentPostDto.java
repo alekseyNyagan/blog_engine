@@ -20,4 +20,6 @@ public final class CurrentPostDto extends BasePostDto {
     private List<PostCommentDto> comments;
     @Schema(description = "List of tags")
     private List<String> tags;
+    @Schema(description = "Text of post")
+    private String text;
 }
