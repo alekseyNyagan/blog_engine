@@ -1,7 +1,8 @@
 package main.mapper;
 
+import main.dto.BaseUserDto;
 import main.dto.PostCommentDto;
-import main.model.PostComment;
+import main.dto.PostCommentFlatDto;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class PostCommentMapperDelegate implements PostCommentMapper {
@@ -10,12 +11,16 @@ public abstract class PostCommentMapperDelegate implements PostCommentMapper {
     UserMapper userMapper;
 
     @Override
-    public PostCommentDto toPostCommentDto(PostComment postComment) {
+    public PostCommentDto toPostCommentDto(PostCommentFlatDto postCommentFlatDto) {
         return PostCommentDto.builder()
-                .id(postComment.getId())
-                .text(postComment.getText())
-                .user(userMapper.toBaseUserDto(postComment.getUser()))
-                .timestamp(postComment.getTime().getEpochSecond())
+                .id(postCommentFlatDto.id())
+                .timestamp(postCommentFlatDto.time().getEpochSecond())
+                .text(postCommentFlatDto.text())
+                .user(BaseUserDto.builder()
+                        .id(postCommentFlatDto.userId())
+                        .name(postCommentFlatDto.userName())
+                        .photo(postCommentFlatDto.userPhoto())
+                        .build())
                 .build();
     }
 }

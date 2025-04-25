@@ -1,13 +1,13 @@
 package main.mapper;
 
 import main.api.request.PostRequest;
-import main.dto.CurrentPostDto;
-import main.dto.PostDto;
+import main.dto.*;
 import main.model.Post;
 import main.model.Tag;
 import main.model.User;
 import main.model.enums.ModerationStatus;
 import main.service.GlobalSettingsService;
+import org.jsoup.Jsoup;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.Instant;
@@ -17,11 +17,7 @@ import java.util.List;
 public abstract class PostMapperDelegate implements PostMapper {
 
     private static final int ANNOUNCE_LENGTH = 150;
-    private static final byte LIKE_VALUE = 1;
-    private static final byte DISLIKE_VALUE = -1;
     private static final String POST_PREMODERATION_SETTING = "POST_PREMODERATION";
-    private static final String NON_BREAKING_SPACE = "&nbsp;";
-    private static final String HTML_TAG_REGEX = "<.*?>";
 
     @Autowired
     private UserMapper userMapper;
@@ -33,38 +29,40 @@ public abstract class PostMapperDelegate implements PostMapper {
     GlobalSettingsService globalSettingsService;
 
     @Override
-    public PostDto toPostDto(Post post) {
-        String text = post.getText();
-        String textWithoutHtmlTags = text.replaceAll(HTML_TAG_REGEX, "");
+    public PostDto toPostDto(PostFlatDto post) {
         return PostDto.builder()
                 .id(post.getId())
                 .title(post.getTitle())
                 .viewCount(post.getViewCount())
-                .user(userMapper.toBaseUserDto(post.getUser()))
-                .likeCount(getPostVotesCount(post, LIKE_VALUE))
-                .dislikeCount(getPostVotesCount(post, DISLIKE_VALUE))
-                .commentCount(post.getComments().size())
-                .timestamp(post.getTime().getEpochSecond())
-                .announce(textWithoutHtmlTags.length() < ANNOUNCE_LENGTH ? textWithoutHtmlTags
-                        : textWithoutHtmlTags.replace(NON_BREAKING_SPACE, " ").substring(0, ANNOUNCE_LENGTH) + "...")
+                .user(BaseUserDto.builder().id(post.getUserId()).name(post.getUserName()).build())
+                .likeCount(post.getLikeCount())
+                .dislikeCount(post.getDislikeCount())
+                .commentCount(post.getCommentCount())
+                .timestamp(post.getTimestamp().getEpochSecond())
+                .announce(getAnnounce(post.getText()))
                 .build();
     }
 
     @Override
-    public CurrentPostDto toCurrentPostDto(Post post) {
-        return CurrentPostDto.builder()
-                .id(post.getId())
-                .title(post.getTitle())
-                .text(post.getText())
-                .viewCount(post.getViewCount())
-                .user(userMapper.toBaseUserDto(post.getUser()))
-                .likeCount(getPostVotesCount(post, LIKE_VALUE))
-                .dislikeCount(getPostVotesCount(post, DISLIKE_VALUE))
-                .comments(post.getComments().stream()
-                        .map(postCommentMapper::toPostCommentDto).toList())
-                .timestamp(post.getTime().getEpochSecond())
-                .tags(post.getTags().stream().map(Tag::getName).toList())
-                .isActive(post.getIsActive() == 1)
+    public PostDetailsDto toCurrentPostDto(PostDetailsFlatDto postDetailsFlatDto, List<PostCommentFlatDto> postCommentFlatDtos, List<String> tags) {
+        return PostDetailsDto.builder()
+                .id(postDetailsFlatDto.id())
+                .title(postDetailsFlatDto.title())
+                .text(postDetailsFlatDto.text())
+                .viewCount(postDetailsFlatDto.viewCount())
+                .user(BaseUserDto.builder()
+                        .id(postDetailsFlatDto.userId())
+                        .name(postDetailsFlatDto.userName())
+                        .photo(postDetailsFlatDto.userPhoto())
+                        .build())
+                .likeCount(postDetailsFlatDto.likeCount())
+                .dislikeCount(postDetailsFlatDto.dislikeCount())
+                .comments(postCommentFlatDtos.stream()
+                        .map(postCommentFlatDto -> postCommentMapper.toPostCommentDto(postCommentFlatDto))
+                        .toList())
+                .timestamp(postDetailsFlatDto.time().getEpochSecond())
+                .tags(tags)
+                .active(postDetailsFlatDto.active())
                 .build();
     }
 
@@ -95,5 +93,12 @@ public abstract class PostMapperDelegate implements PostMapper {
 
     private int getPostVotesCount(Post post, byte voteValue) {
         return (int) post.getVotes().stream().filter(vote -> vote.getValue() == voteValue).count();
+    }
+
+    private String getAnnounce(String text) {
+        String plainText = Jsoup.parse(text).text().replace('\u00A0', ' ').trim();
+        return plainText.length() > ANNOUNCE_LENGTH
+                ? plainText.substring(0, ANNOUNCE_LENGTH) + "..."
+                : plainText;
     }
 }

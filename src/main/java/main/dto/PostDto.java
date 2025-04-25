@@ -13,5 +13,5 @@ public final class PostDto extends BasePostDto {
     @Schema(description = "Small part of post content")
     private String announce;
     @Schema(description = "Comments count")
-    private int commentCount;
+    private long commentCount;
 }

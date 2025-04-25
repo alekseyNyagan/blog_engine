@@ -7,7 +7,7 @@ import jakarta.validation.Valid;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
-import main.dto.CurrentPostDto;
+import main.dto.PostDetailsDto;
 import main.model.enums.ModerationStatus;
 import main.service.strategy.enums.FilterMode;
 import main.service.PostServiceImpl;
@@ -67,7 +67,7 @@ public class ApiPostController {
 
     @Operation(summary = "Get post by id")
     @GetMapping("/{id}")
-    public ResponseEntity<CurrentPostDto> getPostById(@PathVariable @Parameter(description = "Post id") int id) {
+    public ResponseEntity<PostDetailsDto> getPostById(@PathVariable @Parameter(description = "Post id") int id) {
         return ResponseEntity.status(HttpStatus.OK).body(postService.getPostById(id));
     }
 

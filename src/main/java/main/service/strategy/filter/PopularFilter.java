@@ -2,10 +2,10 @@ package main.service.strategy.filter;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import main.model.Post;
-import main.service.strategy.enums.FilterMode;
+import main.dto.PostFlatDto;
 import main.repository.PostsRepository;
 import main.service.PostServiceImpl;
+import main.service.strategy.enums.FilterMode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +24,7 @@ public class PopularFilter implements FilterStrategy {
     }
 
     @Override
-    public Page<Post> execute(int pageNumber, int limit) {
+    public Page<PostFlatDto> execute(int pageNumber, int limit) {
         Pageable page = PageRequest.of(pageNumber, limit);
         return postsRepository.findAllByPostCommentCount(page);
     }

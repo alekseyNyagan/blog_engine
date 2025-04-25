@@ -4,8 +4,10 @@ import main.dto.TagDTO;
 import main.model.Tag;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Set;
 
 @Repository
@@ -24,4 +26,13 @@ public interface TagsRepository extends JpaRepository<Tag, Integer> {
             SELECT name, (1 / (max_count / post_count)) * (tag_count / post_count) AS weight FROM tag_temp JOIN post_temp JOIN max_count_post_by_tag
             """)
     Set<TagDTO> getTags();
+
+    @Query("""
+                SELECT t.name AS name
+                FROM Post p
+                JOIN p.tags t
+                WHERE p.id = :postId
+            """)
+    List<String> findTagNamesByPostId(@Param("postId") int postId);
+
 }

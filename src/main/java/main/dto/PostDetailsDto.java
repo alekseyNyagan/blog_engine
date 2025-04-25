@@ -12,10 +12,10 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder(toBuilder = true)
 @Data
-public final class CurrentPostDto extends BasePostDto {
+public final class PostDetailsDto extends BasePostDto {
     @Schema(description = "Open or closed. True for open, false for closed")
     @JsonProperty("active")
-    private boolean isActive;
+    private boolean active;
     @Schema(description = "List of comments")
     private List<PostCommentDto> comments;
     @Schema(description = "List of tags")

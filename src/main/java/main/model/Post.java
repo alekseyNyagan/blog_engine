@@ -30,8 +30,9 @@ public class Post extends AbstractEntity {
     private Integer moderatorId;
 
     @NotNull
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @ToString.Exclude
     private User user;
 
     @Column(name = "time")

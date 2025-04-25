@@ -8,7 +8,7 @@ import lombok.experimental.SuperBuilder;
 @EqualsAndHashCode
 @SuperBuilder(toBuilder = true)
 @Data
-public abstract sealed class BasePostDto permits CurrentPostDto, PostDto {
+public abstract sealed class BasePostDto permits PostDetailsDto, PostDto {
     @Schema(description = "Post id")
     private int id;
     @Schema(description = "Date and time of post publication in UTC format")
@@ -17,9 +17,9 @@ public abstract sealed class BasePostDto permits CurrentPostDto, PostDto {
     @Schema(description = "Post title")
     private String title;
     @Schema(description = "Likes count")
-    private int likeCount;
+    private long likeCount;
     @Schema(description = "Dislikes count")
-    private int dislikeCount;
+    private long dislikeCount;
     @Schema(description = "Views count")
     private int viewCount;
 }

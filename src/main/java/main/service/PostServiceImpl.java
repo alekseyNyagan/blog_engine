@@ -4,16 +4,12 @@ import main.api.request.ModerationRequest;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.*;
-import main.dto.CalendarDTO;
-import main.dto.CurrentPostDto;
-import main.dto.PostDto;
+import main.dto.*;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
 import main.model.enums.ModerationStatus;
-import main.repository.PostVotesRepository;
-import main.repository.PostsRepository;
-import main.repository.UsersRepository;
+import main.repository.*;
 import main.service.strategy.enums.FilterMode;
 import main.service.strategy.filter.FilterStrategy;
 import main.utils.RandomUtil;
@@ -27,13 +23,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -46,8 +45,6 @@ public class PostServiceImpl implements PostService {
     private static final String POST_NOT_FOUND_ERROR_MESSAGE = "Пост не найден";
     private static final String DATE_FORMAT = "yyyy-MM-dd";
     private static final byte MODERATOR_VALUE = 1;
-    private static final byte POST_IS_ACTIVE_VALUE = 1;
-    private static final byte POST_IS_NOT_ACTIVE_VALUE = 0;
     private static final String INACTIVE_POST_STATUS = "inactive";
     private static final String PENDING_POST_STATUS = "pending";
     private static final String DECLINED_POST_STATUS = "declined";
@@ -65,73 +62,85 @@ public class PostServiceImpl implements PostService {
     private final PostsRepository postsRepository;
     private final PostVotesRepository postVotesRepository;
     private final PostMapper postMapper;
+    private final PostCommentsRepository postCommentsRepository;
     private static final EnumMap<FilterMode, FilterStrategy> filterStrategyMap = new EnumMap<>(FilterMode.class);
+
+    private final TagsRepository tagsRepository;
 
     @Autowired
     public PostServiceImpl(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository,
-                           PostVotesRepository postVotesRepository) {
+                           PostVotesRepository postVotesRepository, PostCommentsRepository postCommentsRepository,
+                           TagsRepository tagsRepository) {
         this.postsRepository = postsRepository;
         this.postMapper = postMapper;
         this.usersRepository = usersRepository;
         this.postVotesRepository = postVotesRepository;
+        this.postCommentsRepository = postCommentsRepository;
+        this.tagsRepository = tagsRepository;
     }
 
     public static void addFilterStrategy(FilterMode mode, FilterStrategy filterStrategy) {
         filterStrategyMap.put(mode, filterStrategy);
     }
 
+    @Transactional
     @Override
     public PostsResponse getPosts(int offset, int limit, FilterMode mode) {
-        Page<Post> posts = filterStrategyMap.get(mode).execute(getPageNumber(offset), limit);
-        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
+        Page<PostFlatDto> posts = filterStrategyMap.get(mode).execute(getPageNumber(offset), limit);
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
     @Override
     public PostsResponse getPostsByQuery(int offset, int limit, String query) {
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
-        Page<Post> posts = postsRepository.findPostsByIsActiveAndModerationStatusAndTextLike(query, page);
-        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
+        Page<PostFlatDto> posts = postsRepository.findPostsByTextLike(query, page);
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
     @Override
     public PostsResponse getPostsByDate(int offset, int limit, String date) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
-        LocalDateTime dayStart = LocalDate.parse(date, formatter).atStartOfDay();
-        LocalDateTime dayEnd = dayStart.plusDays(1);
+        LocalDate parsedDate = LocalDate.parse(date, formatter);
+        ZoneId zoneId = ZoneId.systemDefault();
+
+        Instant dayStart = parsedDate.atStartOfDay(zoneId).toInstant();
+        Instant dayEnd = parsedDate.plusDays(1).atStartOfDay(zoneId).toInstant();
+
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
-        Page<Post> posts = postsRepository.findPostsByIsActiveAndModerationStatusAndTime(dayStart, dayEnd, page);
-        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
+        Page<PostFlatDto> posts = postsRepository.findPostsByTime(dayStart, dayEnd, page);
+
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
     @Override
     public PostsResponse getPostsByTag(int offset, int limit, String tag) {
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
-        Page<Post> posts = postsRepository.findPostsByTag(tag, page);
-        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
+        Page<PostFlatDto> posts = postsRepository.findPostsByTag(tag, page);
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
+    @Transactional
     @Override
-    public CurrentPostDto getPostById(int id) {
-        Post post = postsRepository.findById(id).orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        int viewCount = post.getViewCount();
+    public PostDetailsDto getPostById(int id) {
+        PostDetailsFlatDto postDetailsDto = postsRepository.findPostDetailsById(id).orElseThrow(() ->
+                new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
+        int viewCount = postDetailsDto.viewCount();
         if (SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken) {
-            post.setViewCount(++viewCount);
-            postsRepository.save(post);
+            postsRepository.updateViewCount(++viewCount, id);
         } else {
             main.model.User authUser = getAuthUser();
-            if (!post.getUser().equals(authUser) && authUser.getIsModerator() != MODERATOR_VALUE) {
-                post.setViewCount(++viewCount);
-                postsRepository.save(post);
+            if (postDetailsDto.userId() != authUser.getId() && authUser.getIsModerator() != MODERATOR_VALUE) {
+                postsRepository.updateViewCount(++viewCount, id);
             }
         }
-        return postMapper.toCurrentPostDto(post);
+        return postMapper.toCurrentPostDto(postDetailsDto, postCommentsRepository.findCommentsByPostId(id), tagsRepository.findTagNamesByPostId(id));
     }
 
     @Override
     public PostsResponse getModerationPosts(int offset, int limit, ModerationStatus status) {
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
-        Page<Post> posts = postsRepository.findPostByModerationStatus(status, page);
-        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
+        Page<PostFlatDto> posts = postsRepository.findPostsByModerationStatus(status, page);
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
     @Override
@@ -144,19 +153,19 @@ public class PostServiceImpl implements PostService {
 
     @Override
     public PostsResponse getMyPosts(int offset, int limit, String status) {
-        Page<Post> posts = Page.empty();
+        Page<PostFlatDto> posts = Page.empty();
         main.model.User currentUser = getAuthUser();
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
         switch (status) {
-            case INACTIVE_POST_STATUS -> posts = postsRepository.findPostsByUserAndIsActive(currentUser, POST_IS_NOT_ACTIVE_VALUE, page);
+            case INACTIVE_POST_STATUS -> posts = postsRepository.findPostsByUser(currentUser, page);
             case PENDING_POST_STATUS -> posts = postsRepository
-                    .findPostsByUserAndIsActiveAndModerationStatus(currentUser, POST_IS_ACTIVE_VALUE, ModerationStatus.NEW, page);
+                    .findPostsByUserAndModerationStatus(currentUser, ModerationStatus.NEW, page);
             case DECLINED_POST_STATUS -> posts = postsRepository
-                    .findPostsByUserAndIsActiveAndModerationStatus(currentUser, POST_IS_ACTIVE_VALUE, ModerationStatus.DECLINED, page);
+                    .findPostsByUserAndModerationStatus(currentUser, ModerationStatus.DECLINED, page);
             case PUBLISHED_POST_STATUS -> posts = postsRepository
-                    .findPostsByUserAndIsActiveAndModerationStatus(currentUser, POST_IS_ACTIVE_VALUE, ModerationStatus.ACCEPTED, page);
+                    .findPostsByUserAndModerationStatus(currentUser, ModerationStatus.ACCEPTED, page);
         }
-        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts));
+        return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
     @Override
@@ -255,7 +264,7 @@ public class PostServiceImpl implements PostService {
         return offset / POSTS_ON_PAGE;
     }
 
-    private List<PostDto> getPostDtosFromPosts(Page<Post> posts) {
+    private List<PostDto> getPostDtosFromPosts(List<PostFlatDto> posts) {
         return posts.stream().map(postMapper::toPostDto).toList();
     }
 }

@@ -1,21 +1,23 @@
 package main.mapper;
 
 import main.api.request.PostRequest;
-import main.dto.CurrentPostDto;
-import main.dto.PostDto;
+import main.dto.*;
 import main.model.Post;
 import main.model.User;
 import org.mapstruct.*;
-import org.mapstruct.Mapper;
+
+import java.util.List;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING)
 @DecoratedWith(PostMapperDelegate.class)
 public interface PostMapper {
-    PostDto toPostDto(Post post);
 
-    @Mapping(target = "isActive", ignore = true)
+    @Mapping(target = "timestamp", ignore = true)
+    PostDto toPostDto(PostFlatDto post);
+
+    @Mapping(target = "active", ignore = true)
     @Mapping(target = "tags", ignore = true)
-    CurrentPostDto toCurrentPostDto(Post post);
+    PostDetailsDto toCurrentPostDto(PostDetailsFlatDto postDetailsFlatDto, List<PostCommentFlatDto> postCommentFlatDtos, List<String> tags);
 
     @Mapping(target = "tags", ignore = true)
     Post fromPostRequestToPost(PostRequest postRequest, User user);

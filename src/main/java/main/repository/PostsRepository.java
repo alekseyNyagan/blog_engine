@@ -2,19 +2,23 @@ package main.repository;
 
 import main.api.response.StatisticsResponse;
 import main.dto.CalendarDTO;
+import main.dto.PostDetailsFlatDto;
+import main.dto.PostFlatDto;
 import main.model.Post;
 import main.model.User;
 import main.model.enums.ModerationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.NativeQuery;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PostsRepository extends JpaRepository<Post, Integer> {
@@ -23,61 +27,149 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
     int countPostsByModerationStatus(@Param("status") ModerationStatus moderationStatus);
 
     @Query(value = """
-            SELECT p FROM Post p
-            WHERE p.isActive = 1
-            AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
-            AND p.time <= CURRENT_TIME
+            SELECT new main.dto.PostFlatDto(
+                    p.id,
+                    p.time,
+                    u.id,
+                    u.name,
+                    p.title,
+                    p.text,
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1) AS likesCount,
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                    (SELECT COUNT(c) FROM PostComment c WHERE c.post = p),
+                    p.viewCount
+                )
+                FROM Post p
+                JOIN p.user u
+                WHERE
+                    p.isActive = 1
+                    AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
+                    AND p.time <= CURRENT_TIME
+                GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
+                ORDER BY likesCount DESC
             """)
-    Page<Post> findAllByIsActiveAndModerationStatus(Pageable pageable);
+    Page<PostFlatDto> findAllLikedPosts(Pageable pageable);
 
     @Query(value = """
-            SELECT p FROM Post p LEFT JOIN p.votes pv
-            WHERE p.isActive = 1
-            AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
-            AND p.time <= CURRENT_TIME
-            GROUP BY p.id
-            ORDER BY SUM(CASE WHEN pv.value = 1 THEN 1 ELSE 0 END) DESC
+            SELECT new main.dto.PostFlatDto(
+                    p.id,
+                    p.time,
+                    u.id,
+                    u.name,
+                    p.title,
+                    p.text,
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                    (SELECT COUNT(c) FROM PostComment c WHERE c.post = p) AS commentCount,
+                    p.viewCount
+                )
+                FROM Post p
+                JOIN p.user u
+                WHERE
+                    p.isActive = 1
+                    AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
+                    AND p.time <= CURRENT_TIME
+                GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
+                ORDER BY commentCount DESC
             """)
-    Page<Post> findAllLikedPosts(Pageable pageable);
+    Page<PostFlatDto> findAllByPostCommentCount(Pageable pageable);
 
     @Query(value = """
-            SELECT p FROM Post p LEFT JOIN p.comments c
-            WHERE p.isActive = 1
-            AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
-            AND p.time <= CURRENT_TIME
-            GROUP BY p ORDER BY COUNT(c) DESC
+            SELECT new main.dto.PostFlatDto(
+                    p.id,
+                    p.time,
+                    u.id,
+                    u.name,
+                    p.title,
+                    p.text,
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                    (SELECT COUNT(c) FROM PostComment c WHERE c.post = p),
+                    p.viewCount
+                )
+                FROM Post p
+                JOIN p.user u
+                WHERE
+                    p.isActive = 1
+                    AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
+                    AND p.time <= CURRENT_TIME
+                    AND p.text LIKE CONCAT('%', :text, '%')
+                GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
+            
             """)
-    Page<Post> findAllByPostCommentCount(Pageable pageable);
+    Page<PostFlatDto> findPostsByTextLike(@Param("text") String text, Pageable pageable);
 
     @Query(value = """
-            SELECT p FROM Post p
-            WHERE p.isActive = 1
-            AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
-            AND p.time <= CURRENT_TIME
-            AND p.text LIKE CONCAT('%', :text, '%')
+            SELECT new main.dto.PostFlatDto(
+                    p.id,
+                    p.time,
+                    u.id,
+                    u.name,
+                    p.title,
+                    p.text,
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                    (SELECT COUNT(c) FROM PostComment c WHERE c.post = p),
+                    p.viewCount
+                )
+                FROM Post p
+                JOIN p.user u
+                WHERE
+                    p.isActive = 1
+                    AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
+                    AND p.time BETWEEN :dateFrom AND :dateTo
+                GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<Post> findPostsByIsActiveAndModerationStatusAndTextLike(@Param("text") String text, Pageable pageable);
-
-    @Query(value = """
-            SELECT p FROM Post p
-            WHERE p.isActive = 1
-            AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
-            AND p.time BETWEEN :dateFrom AND :dateTo
-            """)
-    Page<Post> findPostsByIsActiveAndModerationStatusAndTime(@Param("dateFrom") LocalDateTime dateFrom
-            , @Param("dateTo") LocalDateTime dateTo
+    Page<PostFlatDto> findPostsByTime(@Param("dateFrom") Instant dateFrom
+            , @Param("dateTo") Instant dateTo
             , Pageable pageable);
 
     @Query(value = """
-            SELECT p FROM Post p JOIN p.tags t
-            WHERE p.isActive = 1
-            AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
-            AND t.name = :name
+            SELECT new main.dto.PostFlatDto(
+                    p.id,
+                    p.time,
+                    u.id,
+                    u.name,
+                    p.title,
+                    p.text,
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                    (SELECT COUNT(c) FROM PostComment c WHERE c.post = p),
+                    p.viewCount
+                )
+                FROM Post p
+                JOIN p.user u
+                JOIN p.tags t
+                WHERE
+                    p.isActive = 1
+                    AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
+                    AND p.time <= CURRENT_TIME
+                    AND t.name = :name
+                GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<Post> findPostsByTag(@Param("name") String name, Pageable pageable);
+    Page<PostFlatDto> findPostsByTag(@Param("name") String name, Pageable pageable);
 
-    @Query(value = "SELECT p FROM Post p WHERE p.isActive = 1 AND p.moderationStatus = :status")
-    Page<Post> findPostByModerationStatus(@Param("status") ModerationStatus status, Pageable pageable);
+    @Query(value = """
+            SELECT new main.dto.PostFlatDto(
+                    p.id,
+                    p.time,
+                    u.id,
+                    u.name,
+                    p.title,
+                    p.text,
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                    (SELECT COUNT(c) FROM PostComment c WHERE c.post = p),
+                    p.viewCount
+                )
+                FROM Post p
+                JOIN p.user u
+                WHERE
+                    p.isActive = 1
+                    AND p.moderationStatus = :status
+                GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
+            """)
+    Page<PostFlatDto> findPostsByModerationStatus(@Param("status") ModerationStatus status, Pageable pageable);
 
     @Query(value = """
             SELECT FUNCTION('YEAR', p.time) FROM Post p
@@ -98,9 +190,54 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
             """)
     List<CalendarDTO> countPostsByYear(@Param("year") int year);
 
-    Page<Post> findPostsByUserAndIsActive(User user, byte isActive, Pageable pageable);
+    @Query("""
+            SELECT new main.dto.PostFlatDto(
+                p.id,
+                p.time,
+                u.id,
+                u.name,
+                p.title,
+                p.text,
+                (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
+                (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                (SELECT COUNT(c) FROM PostComment c WHERE c.post = p),
+                p.viewCount
+            )
+            FROM Post p
+            JOIN p.user u
+            WHERE
+                p.isActive = 0
+                AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
+                AND p.time <= CURRENT_TIME
+                AND p.user = :user
+                GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
+            """)
+    Page<PostFlatDto> findPostsByUser(User user, Pageable pageable);
 
-    Page<Post> findPostsByUserAndIsActiveAndModerationStatus(User user, byte isActive, ModerationStatus moderationStatus, Pageable pageable);
+    @Query("""
+            SELECT new main.dto.PostFlatDto(
+                p.id,
+                p.time,
+                u.id,
+                u.name,
+                p.title,
+                p.text,
+                (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
+                (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                (SELECT COUNT(c) FROM PostComment c WHERE c.post = p),
+                p.viewCount
+            )
+            FROM Post p
+            JOIN p.user u
+            WHERE
+                p.isActive = 1
+                AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
+                AND p.time <= CURRENT_TIME
+                AND p.user = :user
+                AND p.moderationStatus = :moderationStatus
+                GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
+            """)
+    Page<PostFlatDto> findPostsByUserAndModerationStatus(User user, ModerationStatus moderationStatus, Pageable pageable);
 
     @NativeQuery(value = """
             WITH post_temp AS (
@@ -122,4 +259,51 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
             SELECT postsCount, viewsCount, firstPublication, likesCount, dislikesCount FROM post_temp JOIN post_votes_temp
             """)
     StatisticsResponse getAllStatistic();
+
+    @Modifying
+    @Query("update Post set viewCount = viewCount + 1 where id = :id")
+    void updateViewCount(int viewCount, int id);
+
+    @Query("""
+                SELECT new main.dto.PostFlatDto(
+                    p.id,
+                    p.time,
+                    u.id,
+                    u.name,
+                    p.title,
+                    p.text,
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                    (SELECT COUNT(c) FROM PostComment c WHERE c.post = p),
+                    p.viewCount
+                )
+                FROM Post p
+                JOIN p.user u
+                WHERE
+                    p.isActive = 1
+                    AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
+                    AND p.time <= CURRENT_TIME
+                GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
+            """)
+    Page<PostFlatDto> findPosts(Pageable pageable);
+
+    @Query("""
+            SELECT new main.dto.PostDetailsFlatDto(
+                    p.id,
+                    p.time,
+                    p.isActive = 1,
+                    u.id,
+                    u.name,
+                    u.photo,
+                    p.title,
+                    p.text,
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
+                    (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
+                    p.viewCount
+                )
+                FROM Post p
+                JOIN p.user u
+                WHERE p.id = :postId
+            """)
+    Optional<PostDetailsFlatDto> findPostDetailsById(@Param("postId") int postId);
 }

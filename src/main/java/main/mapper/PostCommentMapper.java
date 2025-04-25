@@ -1,6 +1,7 @@
 package main.mapper;
 
 import main.dto.PostCommentDto;
+import main.dto.PostCommentFlatDto;
 import main.model.PostComment;
 import org.mapstruct.DecoratedWith;
 import org.mapstruct.Mapper;
@@ -12,5 +13,5 @@ import org.mapstruct.ReportingPolicy;
 public interface PostCommentMapper {
     PostComment toEntity(PostCommentDto postCommentDto);
 
-    PostCommentDto toPostCommentDto(PostComment postComment);
+    PostCommentDto toPostCommentDto(PostCommentFlatDto postComment);
 }
