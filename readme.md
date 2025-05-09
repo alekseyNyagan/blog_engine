@@ -1,6 +1,5 @@
 <h1 align="center">BlogEngine</h1>
 <img src="./readme_assets/main_page.png" width="1920">
-<h2 align="center"><a href="http://dev-pub.alexei4b.beget.tech">Live Demo</a></h2>
 
 ## Description
 
