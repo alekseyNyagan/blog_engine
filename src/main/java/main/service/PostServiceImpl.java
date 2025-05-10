@@ -19,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -44,7 +45,6 @@ public class PostServiceImpl implements PostService {
     private static final int POSTS_ON_PAGE = 10;
     private static final String POST_NOT_FOUND_ERROR_MESSAGE = "Пост не найден";
     private static final String DATE_FORMAT = "yyyy-MM-dd";
-    private static final byte MODERATOR_VALUE = 1;
     private static final String INACTIVE_POST_STATUS = "inactive";
     private static final String PENDING_POST_STATUS = "pending";
     private static final String DECLINED_POST_STATUS = "declined";
@@ -128,8 +128,8 @@ public class PostServiceImpl implements PostService {
         if (SecurityContextHolder.getContext().getAuthentication() instanceof AnonymousAuthenticationToken) {
             postsRepository.updateViewCount(++viewCount, id);
         } else {
-            main.model.User authUser = getAuthUser();
-            if (postDetailsDto.userId() != authUser.getId() && authUser.getIsModerator() != MODERATOR_VALUE) {
+            User user = getAuthenticatedUser();
+            if (!postDetailsDto.email().equals(user.getUsername()) && !user.getAuthorities().contains(new SimpleGrantedAuthority("user:moderate"))) {
                 postsRepository.updateViewCount(++viewCount, id);
             }
         }
@@ -154,16 +154,17 @@ public class PostServiceImpl implements PostService {
     @Override
     public PostsResponse getMyPosts(int offset, int limit, String status) {
         Page<PostFlatDto> posts = Page.empty();
-        main.model.User currentUser = getAuthUser();
+        User user = getAuthenticatedUser();
+        String email = user.getUsername();
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
         switch (status) {
-            case INACTIVE_POST_STATUS -> posts = postsRepository.findPostsByUser(currentUser, page);
+            case INACTIVE_POST_STATUS -> posts = postsRepository.findPostsByUser(email, page);
             case PENDING_POST_STATUS -> posts = postsRepository
-                    .findPostsByUserAndModerationStatus(currentUser, ModerationStatus.NEW, page);
+                    .findPostsByUserAndModerationStatus(email, ModerationStatus.NEW, page);
             case DECLINED_POST_STATUS -> posts = postsRepository
-                    .findPostsByUserAndModerationStatus(currentUser, ModerationStatus.DECLINED, page);
+                    .findPostsByUserAndModerationStatus(email, ModerationStatus.DECLINED, page);
             case PUBLISHED_POST_STATUS -> posts = postsRepository
-                    .findPostsByUserAndModerationStatus(currentUser, ModerationStatus.ACCEPTED, page);
+                    .findPostsByUserAndModerationStatus(email, ModerationStatus.ACCEPTED, page);
         }
         return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
@@ -171,7 +172,7 @@ public class PostServiceImpl implements PostService {
     @Transactional
     @Override
     public ResultResponse addPost(PostRequest postRequest) {
-        Post post = postMapper.fromPostRequestToPost(postRequest, getAuthUser());
+        Post post = postMapper.fromPostRequestToPost(postRequest, getEntityOfAuthenticatedUser());
         postsRepository.save(post);
         return new ResultResponse(true);
     }
@@ -179,7 +180,7 @@ public class PostServiceImpl implements PostService {
     @Transactional
     @Override
     public ResultResponse updatePost(int id, PostRequest postRequest) {
-        Post post = postMapper.fromPostRequestToPost(id, postRequest, getAuthUser());
+        Post post = postMapper.fromPostRequestToPost(id, postRequest, getEntityOfAuthenticatedUser());
         postsRepository.save(post);
         return new ResultResponse(true);
     }
@@ -187,7 +188,7 @@ public class PostServiceImpl implements PostService {
     @Transactional
     @Override
     public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue) {
-        main.model.User currentUser = getAuthUser();
+        main.model.User currentUser = getEntityOfAuthenticatedUser();
         Post post = postsRepository.findById(postVoteRequest.getPostId()).
                 orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
@@ -205,7 +206,7 @@ public class PostServiceImpl implements PostService {
     @Transactional
     @Override
     public StatisticsResponse getMyStatistic() {
-        main.model.User currentUser = getAuthUser();
+        main.model.User currentUser = getEntityOfAuthenticatedUser();
         return postsRepository.getMyStatistic(currentUser.getId());
     }
 
@@ -219,8 +220,10 @@ public class PostServiceImpl implements PostService {
     public ResultResponse moderation(ModerationRequest moderationRequest) {
         Post post = postsRepository.findById(moderationRequest.getPostId())
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        main.model.User moderator = getAuthUser();
-        Integer moderatorId = moderator.getId();
+        User user = getAuthenticatedUser();
+        String email = user.getUsername();
+        Integer moderatorId = usersRepository.findUserIdByEmail(email).orElseThrow(() ->
+                new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
         if (moderationRequest.getDecision().equals(ACCEPT_DECISION)) {
             post.setModerationStatus(ModerationStatus.ACCEPTED);
         } else {
@@ -258,11 +261,15 @@ public class PostServiceImpl implements PostService {
         return errorsResponse;
     }
 
-    private main.model.User getAuthUser() {
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    private main.model.User getEntityOfAuthenticatedUser() {
+        User user = getAuthenticatedUser();
         String email = user.getUsername();
         return usersRepository.findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
+    }
+
+    private static User getAuthenticatedUser() {
+        return (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
     }
 
     private int getPageNumber(int offset) {

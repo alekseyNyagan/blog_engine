@@ -13,6 +13,7 @@ public record PostDetailsFlatDto(
         String text,
         long likeCount,
         long dislikeCount,
-        int viewCount
+        int viewCount,
+        String email
 ) {
 }

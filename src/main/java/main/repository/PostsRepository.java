@@ -209,10 +209,10 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                 p.isActive = 0
                 AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
                 AND p.time <= CURRENT_TIME
-                AND p.user = :user
+                AND p.user.email = :email
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<PostFlatDto> findPostsByUser(User user, Pageable pageable);
+    Page<PostFlatDto> findPostsByUser(String email, Pageable pageable);
 
     @Query("""
             SELECT new main.dto.PostFlatDto(
@@ -233,11 +233,11 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                 p.isActive = 1
                 AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
                 AND p.time <= CURRENT_TIME
-                AND p.user = :user
+                AND p.user.email = :email
                 AND p.moderationStatus = :moderationStatus
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<PostFlatDto> findPostsByUserAndModerationStatus(User user, ModerationStatus moderationStatus, Pageable pageable);
+    Page<PostFlatDto> findPostsByUserAndModerationStatus(String email, ModerationStatus moderationStatus, Pageable pageable);
 
     @NativeQuery(value = """
             WITH post_temp AS (
@@ -299,7 +299,8 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                     p.text,
                     (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = 1),
                     (SELECT COUNT(v) FROM PostVote v WHERE v.post = p AND v.value = -1),
-                    p.viewCount
+                    p.viewCount,
+                    u.email
                 )
                 FROM Post p
                 JOIN p.user u
