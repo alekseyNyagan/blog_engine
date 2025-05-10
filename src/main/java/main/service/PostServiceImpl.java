@@ -168,6 +168,7 @@ public class PostServiceImpl implements PostService {
         return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
+    @Transactional
     @Override
     public ResultResponse addPost(PostRequest postRequest) {
         Post post = postMapper.fromPostRequestToPost(postRequest, getAuthUser());
@@ -175,6 +176,7 @@ public class PostServiceImpl implements PostService {
         return new ResultResponse(true);
     }
 
+    @Transactional
     @Override
     public ResultResponse updatePost(int id, PostRequest postRequest) {
         Post post = postMapper.fromPostRequestToPost(id, postRequest, getAuthUser());
@@ -182,6 +184,7 @@ public class PostServiceImpl implements PostService {
         return new ResultResponse(true);
     }
 
+    @Transactional
     @Override
     public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue) {
         main.model.User currentUser = getAuthUser();
@@ -199,6 +202,7 @@ public class PostServiceImpl implements PostService {
         return new ResultResponse(true);
     }
 
+    @Transactional
     @Override
     public StatisticsResponse getMyStatistic() {
         main.model.User currentUser = getAuthUser();
@@ -210,6 +214,7 @@ public class PostServiceImpl implements PostService {
         return postsRepository.getAllStatistic();
     }
 
+    @Transactional
     @Override
     public ResultResponse moderation(ModerationRequest moderationRequest) {
         Post post = postsRepository.findById(moderationRequest.getPostId())

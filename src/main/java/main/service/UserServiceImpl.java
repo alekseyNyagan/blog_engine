@@ -88,6 +88,7 @@ public class UserServiceImpl implements UserService {
         this.contextRepository = new HttpSessionSecurityContextRepository();
     }
 
+    @Transactional
     @Override
     public ErrorsResponse addUser(RegistrationRequest registrationRequest) {
         ErrorsResponse errorsResponse = new ErrorsResponse();
@@ -205,6 +206,7 @@ public class UserServiceImpl implements UserService {
         return resultResponse;
     }
 
+    @Transactional
     @Override
     public ErrorsResponse password(PasswordRequest passwordRequest) {
         ErrorsResponse errorsResponse = new ErrorsResponse();

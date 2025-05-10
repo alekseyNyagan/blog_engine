@@ -9,6 +9,9 @@ spring.mail.username: ${GMAIL_USERNAME}
 spring.mail.password: ${GMAIL_PASSWORD}
 spring.mail.properties.mail.smtp.auth: true
 spring.mail.properties.mail.smtp.starttls.enable: true
+spring:
+  jpa:
+    open-in-view: false
 
 blog.title: DevPub
 blog.subtitle: Рассказы разработчиков

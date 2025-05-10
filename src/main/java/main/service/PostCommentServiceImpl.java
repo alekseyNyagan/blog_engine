@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.text.MessageFormat;
 import java.util.NoSuchElementException;
@@ -33,6 +34,7 @@ public class PostCommentServiceImpl implements PostCommentService {
         this.usersRepository = usersRepository;
     }
 
+    @Transactional
     @Override
     public CommentResponse addComment(CommentRequest commentRequest) {
         CommentResponse commentResponse = new CommentResponse();
