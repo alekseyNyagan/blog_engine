@@ -8,6 +8,8 @@ import main.model.enums.ModerationStatus;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Set;
+
 @Setter
 @Getter
 @AllArgsConstructor
@@ -57,7 +59,7 @@ public class Post extends AbstractEntity {
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "post")
     @ToString.Exclude
-    private List<PostVote> votes;
+    private Set<PostVote> votes;
 
     @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
@@ -67,4 +69,22 @@ public class Post extends AbstractEntity {
     )
     @ToString.Exclude
     private List<Tag> tags;
+
+    public void addComment(PostComment comment) {
+        if (comments == null) {
+            comments = List.of(comment);
+        } else {
+            comments.add(comment);
+            comment.setPost(this);
+        }
+    }
+
+    public void addVote(PostVote vote) {
+        if (votes == null) {
+            votes = Set.of(vote);
+        } else {
+            votes.add(vote);
+            vote.setPost(this);
+        }
+    }
 }

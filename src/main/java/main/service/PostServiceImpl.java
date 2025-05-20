@@ -60,7 +60,6 @@ public class PostServiceImpl implements PostService {
     private static final String IMAGE_ERROR_KEY = "image";
     private final UsersRepository usersRepository;
     private final PostsRepository postsRepository;
-    private final PostVotesRepository postVotesRepository;
     private final PostMapper postMapper;
     private final PostCommentsRepository postCommentsRepository;
     private static final EnumMap<FilterMode, FilterStrategy> filterStrategyMap = new EnumMap<>(FilterMode.class);
@@ -69,12 +68,10 @@ public class PostServiceImpl implements PostService {
 
     @Autowired
     public PostServiceImpl(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository,
-                           PostVotesRepository postVotesRepository, PostCommentsRepository postCommentsRepository,
-                           TagsRepository tagsRepository) {
+                           PostCommentsRepository postCommentsRepository, TagsRepository tagsRepository) {
         this.postsRepository = postsRepository;
         this.postMapper = postMapper;
         this.usersRepository = usersRepository;
-        this.postVotesRepository = postVotesRepository;
         this.postCommentsRepository = postCommentsRepository;
         this.tagsRepository = tagsRepository;
     }
@@ -191,15 +188,9 @@ public class PostServiceImpl implements PostService {
         main.model.User currentUser = getEntityOfAuthenticatedUser();
         Post post = postsRepository.findById(postVoteRequest.getPostId()).
                 orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        Optional<PostVote> postVote = postVotesRepository.findPostVoteByUserAndPost(currentUser, post);
-        postVote.ifPresentOrElse(pv -> {
-                    if (pv.getValue() != postVoteValue) {
-                        pv.setValue(postVoteValue);
-                        pv.setTime(LocalDateTime.now());
-                        postVotesRepository.save(pv);
-                    }
-                },
-                () -> postVotesRepository.save(new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue)));
+        PostVote postVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
+        post.addVote(postVote);
+        postsRepository.save(post);
         return new ResultResponse(true);
     }
 

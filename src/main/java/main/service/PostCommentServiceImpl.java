@@ -46,14 +46,14 @@ public class PostCommentServiceImpl implements PostCommentService {
                 .findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_ERROR_PATTERN, email)));
         PostComment postComment = new PostComment();
-        postComment.setPost(post);
         postComment.setUser(currentUser);
         postComment.setText(commentRequest.getText());
         if (commentRequest.getParentId() instanceof Integer parentId) {
             postCommentsRepository.findById(parentId).orElseThrow(() -> new NoSuchElementException(POST_COMMENT_NOT_FOUND_ERROR_MESSAGE));
             postComment.setParentID(parentId);
         }
-        postCommentsRepository.save(postComment);
+        post.addComment(postComment);
+        postsRepository.save(post);
         commentResponse.setId(postComment.getId());
         return commentResponse;
     }
