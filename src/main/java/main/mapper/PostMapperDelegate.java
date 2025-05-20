@@ -20,9 +20,6 @@ public abstract class PostMapperDelegate implements PostMapper {
     private static final String POST_PREMODERATION_SETTING = "POST_PREMODERATION";
 
     @Autowired
-    private UserMapper userMapper;
-
-    @Autowired
     private PostCommentMapper postCommentMapper;
 
     @Autowired
@@ -89,10 +86,6 @@ public abstract class PostMapperDelegate implements PostMapper {
         Post post = fromPostRequestToPost(postRequest, currentUser);
         post.setId(id);
         return post;
-    }
-
-    private int getPostVotesCount(Post post, byte voteValue) {
-        return (int) post.getVotes().stream().filter(vote -> vote.getValue() == voteValue).count();
     }
 
     private String getAnnounce(String text) {
