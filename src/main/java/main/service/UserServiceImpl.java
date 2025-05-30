@@ -146,6 +146,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public ErrorsResponse updateUser(UpdateProfileRequest updateProfileRequest) {
         ErrorsResponse errorsResponse = new ErrorsResponse();
         User user = getUser();
@@ -163,6 +164,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public ErrorsResponse updateUserWithPhoto(UpdateProfileRequest updateProfileRequest) throws IOException {
         ErrorsResponse errorsResponse = new ErrorsResponse();
         Map<String, String> errors = new HashMap<>();
@@ -185,6 +187,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public ResultResponse restore(RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException {
         ResultResponse resultResponse = new ResultResponse();
         Optional<User> userOptional = usersRepository.findUserByEmail(restoreRequest.getEmail());
