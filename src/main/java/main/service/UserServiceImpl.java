@@ -56,7 +56,6 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final ImageService imageService;
     private final MailService mailService;
-    private final SecurityContextRepository contextRepository;
 
     @Autowired
     public UserServiceImpl(UsersRepository usersRepository, CaptchaCodeService captchaCodeService, UserMapper mapper, ImageService imageService,
@@ -68,7 +67,6 @@ public class UserServiceImpl implements UserService {
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
         this.imageService = imageService;
-        this.contextRepository = new HttpSessionSecurityContextRepository();
     }
 
     @Transactional
@@ -95,13 +93,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginResponse login(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
         Authentication auth = authenticationManager
                 .authenticate(
                         new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
-        context.setAuthentication(auth);
-        SecurityContextHolder.setContext(context);
-        contextRepository.saveContext(context, request, response);
+        SecurityContextHolder.getContext().setAuthentication(auth);
 
         String email = SecurityUtils.getCurrentUserEmail();
         return getLoginResponse(email);
