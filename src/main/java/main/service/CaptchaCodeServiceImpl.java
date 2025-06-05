@@ -55,6 +55,11 @@ public class CaptchaCodeServiceImpl implements CaptchaCodeService {
         return captchaCodeResponse;
     }
 
+    @Override
+    public boolean isCaptchaNotValid(String secret, String value) {
+        return !captchaCodeRepository.findCaptchaCodeBySecretCode(secret).getCode().equals(value);
+    }
+
     private static String drawImage(Cage cage, String code) throws IOException {
         BufferedImage bufferedImage = ImageUtil.resizeImage(cage.drawImage(code), CAPTCHA_WIDTH, CAPTCHA_HEIGHT);
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
