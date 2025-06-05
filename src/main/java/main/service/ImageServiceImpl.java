@@ -23,6 +23,8 @@ import java.util.Map;
 public class ImageServiceImpl implements ImageService {
 
     private static final int MAX_FILE_SIZE = 5_242_880;
+    private static final int CAPTCHA_WIDTH = 100;
+    private static final int CAPTCHA_HEIGHT = 35;
     private static final String PNG_FILE_EXTENSION = "png";
     private static final String ENCODED_STRING_PREFIX = "data:image/png;base64,";
 
@@ -36,6 +38,12 @@ public class ImageServiceImpl implements ImageService {
     @Override
     public boolean isImageSizeValid(MultipartFile file) {
         return file.getSize() <= MAX_FILE_SIZE;
+    }
+
+    @Override
+    public String drawCaptchaImage(Cage cage, String code) throws IOException {
+        BufferedImage resizedImage = ImageUtil.resizeImage(cage.drawImage(code), CAPTCHA_WIDTH, CAPTCHA_HEIGHT);
+        return convertToBase64PngDataUrl(resizedImage);
     }
 
     private static @NotNull String convertToBase64PngDataUrl(BufferedImage resizedImage) throws IOException {
