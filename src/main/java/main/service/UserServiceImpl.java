@@ -42,7 +42,7 @@ public class UserServiceImpl implements UserService {
     private static final String USER_WITH_EMAIL_EXISTS_ERROR_MESSAGE = "Пользователь с данным e-mail уже зарегистрирован";
     private static final String USER_WITH_EMAIL_EXISTS_ERROR_KEY = "email";
     private static final String USER_NOT_FOUND_MESSAGE_PATTERN = "user with email {0} not found";
-    private static final String PHOTO_SIZE_ERROR_MESSAGE = "user with email {0} not found";
+    private static final String PHOTO_SIZE_ERROR_MESSAGE = "Превышен допустимый размер фотографии (5MB)";
     private static final String PHOTO_SIZE_ERROR_KEY = "photo";
     private static final String RESTORE_PASSWORD_LINK_EXPIRED_KEY = "code";
     private static final String RESTORE_PASSWORD_LINK_EXPIRED_MESSAGE = """
