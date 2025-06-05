@@ -9,6 +9,7 @@ import main.api.request.PostVoteRequest;
 import main.api.response.*;
 import main.dto.PostDetailsDto;
 import main.model.enums.ModerationStatus;
+import main.service.PostQueryService;
 import main.service.strategy.enums.FilterMode;
 import main.service.PostServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +24,12 @@ import org.springframework.web.bind.annotation.*;
 public class ApiPostController {
 
     private final PostServiceImpl postService;
+    private final PostQueryService postQueryService;
 
     @Autowired
-    public ApiPostController(PostServiceImpl postService) {
+    public ApiPostController(PostServiceImpl postService, PostQueryService postQueryService) {
         this.postService = postService;
+        this.postQueryService = postQueryService;
     }
 
     @Operation(summary = "Get posts", description = "Get page of posts with chosen mode")
@@ -34,7 +37,7 @@ public class ApiPostController {
     public ResponseEntity<PostsResponse> getPosts(@RequestParam @Parameter(description = "Offset for pagination") int offset
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
             , @RequestParam @Parameter(description = "Sort mode") FilterMode mode) {
-        return new ResponseEntity<>(postService.getPosts(offset, limit, mode), HttpStatus.OK);
+        return new ResponseEntity<>(postQueryService.getPosts(offset, limit, mode), HttpStatus.OK);
     }
 
     @Operation(summary = "Get posts", description = "Get page of posts that contain given query")
@@ -43,9 +46,9 @@ public class ApiPostController {
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
             , @RequestParam @Parameter(description = "Query for search") String query) {
         if (query.isBlank()) {
-            return new ResponseEntity<>(postService.getPosts(offset, limit, FilterMode.RECENT), HttpStatus.OK);
+            return new ResponseEntity<>(postQueryService.getPosts(offset, limit, FilterMode.RECENT), HttpStatus.OK);
         } else {
-            return new ResponseEntity<>(postService.getPostsByQuery(offset, limit, query), HttpStatus.OK);
+            return new ResponseEntity<>(postQueryService.getPostsByQuery(offset, limit, query), HttpStatus.OK);
         }
     }
 
@@ -54,7 +57,7 @@ public class ApiPostController {
     public ResponseEntity<PostsResponse> getPostsByDate(@RequestParam @Parameter(description = "Offset for pagination") int offset
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
             , @RequestParam @Parameter(description = "Date") String date) {
-        return new ResponseEntity<>(postService.getPostsByDate(offset, limit, date), HttpStatus.OK);
+        return new ResponseEntity<>(postQueryService.getPostsByDate(offset, limit, date), HttpStatus.OK);
     }
 
     @Operation(summary = "Get posts by tag", description = "Get page of posts that contain given tag")
@@ -62,7 +65,7 @@ public class ApiPostController {
     public ResponseEntity<PostsResponse> getPostsByTag(@RequestParam @Parameter(description = "Offset for pagination") int offset
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
             , @RequestParam @Parameter(description = "Tag") String tag) {
-        return new ResponseEntity<>(postService.getPostsByTag(offset, limit, tag), HttpStatus.OK);
+        return new ResponseEntity<>(postQueryService.getPostsByTag(offset, limit, tag), HttpStatus.OK);
     }
 
     @Operation(summary = "Get post by id")
@@ -77,7 +80,7 @@ public class ApiPostController {
     public ResponseEntity<PostsResponse> getModerationPosts(@RequestParam @Parameter(description = "Offset for pagination") int offset
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
             , @RequestParam @Parameter(description = "Moderation status of posts") ModerationStatus status) {
-        return new ResponseEntity<>(postService.getModerationPosts(offset, limit, status), HttpStatus.OK);
+        return new ResponseEntity<>(postQueryService.getModerationPosts(offset, limit, status), HttpStatus.OK);
     }
 
     @Operation(summary = "Get page of my posts")
@@ -86,7 +89,7 @@ public class ApiPostController {
     public ResponseEntity<PostsResponse> getMyPosts(@RequestParam @Parameter(description = "Offset for pagination") int offset
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
             , @RequestParam @Parameter(description = "Moderation status of posts") String status) {
-        return new ResponseEntity<>(postService.getMyPosts(offset, limit, status), HttpStatus.OK);
+        return new ResponseEntity<>(postQueryService.getMyPosts(offset, limit, status), HttpStatus.OK);
     }
 
     @Operation(summary = "Add post", description = "Add new post")

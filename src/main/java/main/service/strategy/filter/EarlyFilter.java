@@ -4,7 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import main.dto.PostFlatDto;
 import main.repository.PostsRepository;
-import main.service.PostServiceImpl;
+import main.service.PostQueryServiceImpl;
 import main.service.strategy.enums.FilterMode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,7 +22,7 @@ public class EarlyFilter implements FilterStrategy {
     @PostConstruct
     @Override
     public void register() {
-        PostServiceImpl.addFilterStrategy(FilterMode.EARLY, this);
+        PostQueryServiceImpl.addFilterStrategy(FilterMode.EARLY, this);
     }
 
     @Override

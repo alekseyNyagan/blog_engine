@@ -31,16 +31,18 @@ public class ApiGeneralController {
     private final PostService postService;
     private final PostCommentService postCommentService;
     private final UserService userService;
+    private final StatisticsService statisticsService;
 
     @Autowired
     public ApiGeneralController(InitResponse initResponse, GlobalSettingsService globalSettingsService, TagsService tagsService
-            , PostService postService, PostCommentService postCommentService, UserService userService) {
+            , PostService postService, PostCommentService postCommentService, UserService userService, StatisticsService statisticsService) {
         this.initResponse = initResponse;
         this.globalSettingsService = globalSettingsService;
         this.tagsService = tagsService;
         this.postService = postService;
         this.postCommentService = postCommentService;
         this.userService = userService;
+        this.statisticsService = statisticsService;
     }
 
     @Operation(summary = "Get calendar with posts count"
@@ -81,7 +83,7 @@ public class ApiGeneralController {
     @GetMapping("/statistics/my")
     @PreAuthorize("hasAuthority('user:write')")
     public StatisticsResponse getMyStatistic() {
-        return postService.getMyStatistic();
+        return statisticsService.getMyStatistics();
     }
 
     @Operation(summary = "Get entire blog statistics")
@@ -90,7 +92,7 @@ public class ApiGeneralController {
         if (Boolean.TRUE.equals(!globalSettingsService.getGlobalSettings().get("MULTIUSER_MODE")) && userService.getUser().getIsModerator() != 1) {
             return ResponseEntity.status(401).build();
         } else {
-            return ResponseEntity.ok(postService.getAllStatistic());
+            return ResponseEntity.ok(statisticsService.getAllStatistics());
         }
     }
 
