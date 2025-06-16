@@ -11,7 +11,7 @@ import main.dto.PostDetailsDto;
 import main.model.enums.ModerationStatus;
 import main.service.PostQueryService;
 import main.service.strategy.enums.FilterMode;
-import main.service.PostServiceImpl;
+import main.service.PostService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,11 +23,11 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/post")
 public class ApiPostController {
 
-    private final PostServiceImpl postService;
+    private final PostService postService;
     private final PostQueryService postQueryService;
 
     @Autowired
-    public ApiPostController(PostServiceImpl postService, PostQueryService postQueryService) {
+    public ApiPostController(PostService postService, PostQueryService postQueryService) {
         this.postService = postService;
         this.postQueryService = postQueryService;
     }

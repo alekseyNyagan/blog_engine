@@ -4,7 +4,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import main.dto.PostFlatDto;
 import main.repository.PostsRepository;
-import main.service.PostQueryServiceImpl;
+import main.service.PostQueryService;
 import main.service.strategy.enums.FilterMode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,7 +20,7 @@ public class BestFilter implements FilterStrategy {
     @PostConstruct
     @Override
     public void register() {
-        PostQueryServiceImpl.addFilterStrategy(FilterMode.BEST, this);
+        PostQueryService.addFilterStrategy(FilterMode.BEST, this);
     }
 
     @Override

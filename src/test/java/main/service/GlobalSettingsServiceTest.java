@@ -19,13 +19,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class GlobalSettingsServiceImplTest {
+class GlobalSettingsServiceTest {
 
     @Mock
     private GlobalSettingsRepository globalSettingsRepository;
 
     @InjectMocks
-    private GlobalSettingsServiceImpl globalSettingsService;
+    private GlobalSettingsService globalSettingsService;
 
     /**
      * Given the system has global settings stored in the repository<br>

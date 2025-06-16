@@ -17,12 +17,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 @ExtendWith(MockitoExtension.class)
-public class TagServiceImplTest {
+public class TagServiceTest {
 
     private final ProjectionFactory factory = new SpelAwareProxyProjectionFactory();
 
     @InjectMocks
-    private TagsServiceImpl tagsService;
+    private TagsService tagsService;
 
     @Mock
     private TagsRepository tagsRepository;

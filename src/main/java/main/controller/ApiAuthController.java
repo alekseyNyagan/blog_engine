@@ -68,10 +68,8 @@ public class ApiAuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody @Parameter(description = """
             Information with user credentials to login
-            """) LoginRequest loginRequest
-            , HttpServletRequest request
-            , HttpServletResponse response) {
-        return ResponseEntity.ok(usersService.login(loginRequest, request, response));
+            """) LoginRequest loginRequest) {
+        return ResponseEntity.ok(usersService.login(loginRequest));
     }
 
     @Operation(summary = "Logout user")

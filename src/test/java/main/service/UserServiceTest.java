@@ -21,7 +21,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class UserServiceImplTest {
+public class UserServiceTest {
 
     @Mock
     private UsersRepository usersRepository;
@@ -30,7 +30,7 @@ public class UserServiceImplTest {
     private CaptchaCodeRepository captchaCodeRepository;
 
     @InjectMocks
-    private UserServiceImpl userService;
+    private UserService userService;
 
     @Test
     @DisplayName("Should add user successfully")
