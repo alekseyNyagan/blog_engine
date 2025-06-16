@@ -22,7 +22,7 @@ public class PostCommentService {
 
     private static final String POST_NOT_FOUND_ERROR_MESSAGE = "Публикация не найдена";
     private static final String USER_NOT_FOUND_ERROR_PATTERN = "user {0} not found";
-    private static final String POST_COMMENT_NOT_FOUND_ERROR_MESSAGE = "user {0} not found";
+    private static final String POST_COMMENT_NOT_FOUND_ERROR_MESSAGE = "Комментарий не найден";
     private final PostsRepository postsRepository;
     private final PostCommentsRepository postCommentsRepository;
     private final UsersRepository usersRepository;
