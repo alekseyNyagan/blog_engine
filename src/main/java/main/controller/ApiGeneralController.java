@@ -8,6 +8,7 @@ import main.api.request.CommentRequest;
 import main.api.request.ModerationRequest;
 import main.api.request.UpdateProfileRequest;
 import main.api.response.*;
+import main.repository.TagsRepository;
 import main.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -27,22 +28,22 @@ public class ApiGeneralController {
 
     private final InitResponse initResponse;
     private final GlobalSettingsService globalSettingsService;
-    private final TagsService tagsService;
+    private final TagsRepository tagsRepository;
     private final PostService postService;
     private final PostCommentService postCommentService;
     private final UserService userService;
     private final StatisticsService statisticsService;
 
     @Autowired
-    public ApiGeneralController(InitResponse initResponse, GlobalSettingsService globalSettingsService, TagsService tagsService
-            , PostService postService, PostCommentService postCommentService, UserService userService, StatisticsService statisticsService) {
+    public ApiGeneralController(InitResponse initResponse, GlobalSettingsService globalSettingsService, PostService postService, TagsRepository tagsRepository,
+                                PostCommentService postCommentService, UserService userService, StatisticsService statisticsService) {
         this.initResponse = initResponse;
         this.globalSettingsService = globalSettingsService;
-        this.tagsService = tagsService;
         this.postService = postService;
         this.postCommentService = postCommentService;
         this.userService = userService;
         this.statisticsService = statisticsService;
+        this.tagsRepository = tagsRepository;
     }
 
     @Operation(summary = "Get calendar with posts count"
@@ -55,7 +56,7 @@ public class ApiGeneralController {
     @Operation(summary = "Get tags", description = "Get tags with their weights")
     @GetMapping("/tag")
     public TagsResponse getTags() {
-        return tagsService.getTags();
+        return new TagsResponse(tagsRepository.getTags());
     }
 
     @Operation(summary = "Get global settings", description = "Get settings for entire blog")
