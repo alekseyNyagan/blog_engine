@@ -1,8 +1,10 @@
 spring:
   datasource:
-    url: jdbc:tc:mysql:8.0.36:///db?user=root?password=?TC_MY_CNF=mysql_conf_override
+    url: jdbc:tc:mysql:9.2.0:///db?user=root?password=?TC_MY_CNF=mysql_conf_override
     username: root
     password:
   flyway:
     enabled: true
-    locations: classpath:db/migration
+    locations:
+      - filesystem:src/main/resources/db/migration
+      - filesystem:src/test/resources/db/test_migration
