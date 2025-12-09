@@ -2,9 +2,8 @@ package main.service;
 
 import main.api.request.RegistrationRequest;
 import main.api.response.ErrorsResponse;
-import main.model.CaptchaCode;
+import main.mapper.UserMapper;
 import main.model.User;
-import main.repository.CaptchaCodeRepository;
 import main.repository.UsersRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +16,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
@@ -27,7 +27,10 @@ public class UserServiceTest {
     private UsersRepository usersRepository;
 
     @Mock
-    private CaptchaCodeRepository captchaCodeRepository;
+    private CaptchaCodeService captchaCodeService;
+
+    @Mock
+    private UserMapper mapper;
 
     @InjectMocks
     private UserService userService;
@@ -41,11 +44,9 @@ public class UserServiceTest {
         registrationRequest.setCaptcha("12345");
         registrationRequest.setCaptchaSecret("secret");
 
-        CaptchaCode captchaCode = new CaptchaCode();
-        captchaCode.setCode("12345");
-        when(captchaCodeRepository.findCaptchaCodeBySecretCode(anyString())).thenReturn(captchaCode);
-
+        when(captchaCodeService.isCaptchaNotValid(anyString(), anyString())).thenReturn(false);
         when(usersRepository.findUserByEmail(anyString())).thenReturn(Optional.empty());
+        when(mapper.fromRegistrationRequestToUser(any(RegistrationRequest.class))).thenReturn(new User());
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 
@@ -62,9 +63,7 @@ public class UserServiceTest {
         registrationRequest.setCaptcha("12345");
         registrationRequest.setCaptchaSecret("secret");
 
-        CaptchaCode captchaCode = new CaptchaCode();
-        captchaCode.setCode("12345");
-        when(captchaCodeRepository.findCaptchaCodeBySecretCode(anyString())).thenReturn(captchaCode);
+        when(captchaCodeService.isCaptchaNotValid(anyString(), anyString())).thenReturn(false);
 
         User existingUser = new User();
         existingUser.setEmail("test@example.com");
@@ -83,14 +82,10 @@ public class UserServiceTest {
         RegistrationRequest registrationRequest = new RegistrationRequest();
         registrationRequest.setEmail("test@example.com");
         registrationRequest.setPassword("password");
-        registrationRequest.setCaptcha("12345");
+        registrationRequest.setCaptcha("wrong-captcha");
         registrationRequest.setCaptchaSecret("secret");
 
-        CaptchaCode captchaCode = new CaptchaCode();
-        captchaCode.setCode("54321");
-        when(captchaCodeRepository.findCaptchaCodeBySecretCode(anyString())).thenReturn(captchaCode);
-
-        when(usersRepository.findUserByEmail(anyString())).thenReturn(Optional.empty());
+        when(captchaCodeService.isCaptchaNotValid(anyString(), anyString())).thenReturn(true);
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 

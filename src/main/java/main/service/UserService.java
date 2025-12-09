@@ -80,7 +80,7 @@ public class UserService {
         if (errors.isEmpty()) {
             User user = mapper.fromRegistrationRequestToUser(registrationRequest);
             usersRepository.save(user);
-            new ErrorsResponse(true);
+            return new ErrorsResponse(true);
         }
         
         return new ErrorsResponse(false, errors);
