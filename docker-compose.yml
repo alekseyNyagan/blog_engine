@@ -18,7 +18,7 @@ services:
       - GMAIL_PASSWORD=
 
   db:
-    image: mysql:9.2.0
+    image: mysql:9.5.0
     container_name: db
     environment:
       - MYSQL_ROOT_PASSWORD=testtest
@@ -30,6 +30,8 @@ services:
       timeout: 5s
     ports:
       - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
 
   flyway:
     container_name: my-flyway
@@ -37,8 +39,11 @@ services:
     environment:
       - FLYWAY_USER=root
       - FLYWAY_PASSWORD=testtest
-      - FLYWAY_URL=jdbc:mysql://db:3306/blog_engine
+      - FLYWAY_URL=jdbc:mysql://db:3306/blog_engine?allowPublicKeyRetrieval=true&useSSL=false
       - FLYWAY_SCHEMAS=blog_engine
     command: -locations=filesystem:/flyway/sql -connectRetries=60 migrate
     volumes:
      - ./src/main/resources/db/migration:/flyway/sql
+
+volumes:
+  mysql_data:
