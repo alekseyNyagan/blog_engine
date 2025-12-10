@@ -9,6 +9,7 @@ import main.api.request.PostVoteRequest;
 import main.api.response.*;
 import main.dto.PostDetailsDto;
 import main.model.enums.ModerationStatus;
+import main.security.CustomUserDetails;
 import main.service.PostQueryService;
 import main.service.strategy.enums.FilterMode;
 import main.service.PostService;
@@ -100,8 +101,8 @@ public class ApiPostController {
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> addPost(@RequestBody @Parameter(description = """
             Request body for posting new post
-            """) @Valid PostRequest postRequest, @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(postService.addPost(postRequest, userDetails));
+            """) @Valid PostRequest postRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.addPost(postRequest, userDetails.getId()));
     }
 
     @Operation(summary = "Update post")
@@ -110,21 +111,21 @@ public class ApiPostController {
     public ResponseEntity<ResultResponse> updatePost(@PathVariable @Parameter(description = "Post id to update") int id
             , @RequestBody @Parameter(description = """
             Request body for updating post
-            """) PostRequest postRequest, @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(postService.updatePost(id, postRequest, userDetails));
+            """) PostRequest postRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.updatePost(id, postRequest, userDetails.getId()));
     }
 
     @Operation(summary = "Make like")
     @PostMapping("/like")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResultResponse like(@RequestBody @Parameter(description = "Request body for making post like") PostVoteRequest postVoteRequest, @AuthenticationPrincipal UserDetails userDetails) {
-        return postService.makePostVote(postVoteRequest, (byte) 1, userDetails);
+    public ResultResponse like(@RequestBody @Parameter(description = "Request body for making post like") PostVoteRequest postVoteRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return postService.makePostVote(postVoteRequest, (byte) 1, userDetails.getId());
     }
 
     @Operation(summary = "Make dislike")
     @PostMapping("/dislike")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResultResponse dislike(@RequestBody @Parameter(description = "Request body for making post dislike") PostVoteRequest postVoteRequest, @AuthenticationPrincipal UserDetails userDetails) {
-        return postService.makePostVote(postVoteRequest, (byte) -1, userDetails);
+    public ResultResponse dislike(@RequestBody @Parameter(description = "Request body for making post dislike") PostVoteRequest postVoteRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return postService.makePostVote(postVoteRequest, (byte) -1, userDetails.getId());
     }
 }

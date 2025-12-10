@@ -19,13 +19,11 @@ import main.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
@@ -36,7 +34,6 @@ public class PostService {
 
     private static final String POST_NOT_FOUND_ERROR_MESSAGE = "Пост не найден";
     private static final String ACCEPT_DECISION = "accept";
-    private static final String USER_NOT_FOUND_MESSAGE_PATTERN = "user {0} not found";
     private final UsersRepository usersRepository;
     private final PostsRepository postsRepository;
     private final PostMapper postMapper;
@@ -78,22 +75,24 @@ public class PostService {
     }
 
     @Transactional
-    public ResultResponse addPost(PostRequest postRequest, UserDetails userDetails) {
-        Post post = postMapper.fromPostRequestToPost(postRequest, getEntityOfAuthenticatedUser(userDetails));
+    public ResultResponse addPost(PostRequest postRequest, int userId) {
+        main.model.User user = usersRepository.getReferenceById(userId);
+        Post post = postMapper.fromPostRequestToPost(postRequest, user);
         postsRepository.save(post);
         return new ResultResponse(true);
     }
 
     @Transactional
-    public ResultResponse updatePost(int id, PostRequest postRequest, UserDetails userDetails) {
-        Post post = postMapper.fromPostRequestToPost(id, postRequest, getEntityOfAuthenticatedUser(userDetails));
+    public ResultResponse updatePost(int id, PostRequest postRequest, int userId) {
+        main.model.User user = usersRepository.getReferenceById(userId);
+        Post post = postMapper.fromPostRequestToPost(id, postRequest, user);
         postsRepository.save(post);
         return new ResultResponse(true);
     }
 
     @Transactional
-    public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue, UserDetails userDetails) {
-        main.model.User currentUser = getEntityOfAuthenticatedUser(userDetails);
+    public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue, int userId) {
+        main.model.User currentUser = usersRepository.getReferenceById(userId);
         Post post = postsRepository.findById(postVoteRequest.getPostId()).
                 orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         PostVote postVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
@@ -103,12 +102,9 @@ public class PostService {
     }
 
     @Transactional
-    public ResultResponse moderation(ModerationRequest moderationRequest, UserDetails userDetails) {
+    public ResultResponse moderation(ModerationRequest moderationRequest, int moderatorId) {
         Post post = postsRepository.findById(moderationRequest.getPostId())
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        String email = userDetails.getUsername();
-        Integer moderatorId = usersRepository.findUserIdByEmail(email).orElseThrow(() ->
-                new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
 
         if (moderationRequest.getDecision().equals(ACCEPT_DECISION)) {
             post.setModerationStatus(ModerationStatus.ACCEPTED);
@@ -123,11 +119,5 @@ public class PostService {
 
     public Object image(MultipartFile multipartFile) throws IOException {
         return imageService.uploadImage(multipartFile);
-    }
-
-    private main.model.User getEntityOfAuthenticatedUser(UserDetails userDetails) {
-        String email = userDetails.getUsername();
-        return usersRepository.findUserByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
     }
 }

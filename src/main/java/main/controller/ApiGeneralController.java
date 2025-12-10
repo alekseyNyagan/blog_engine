@@ -10,6 +10,7 @@ import main.api.request.UpdateProfileRequest;
 import main.api.response.*;
 import main.model.User;
 import main.repository.TagsRepository;
+import main.security.CustomUserDetails;
 import main.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -79,8 +80,8 @@ public class ApiGeneralController {
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<CommentResponse> addComment(@RequestBody @Parameter(description = """
             Comment text and post id that user want to add to and id of comment to reply to
-            """) @Valid CommentRequest commentRequest, @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.status(HttpStatus.OK).body(postCommentService.addComment(commentRequest, userDetails));
+            """) @Valid CommentRequest commentRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.status(HttpStatus.OK).body(postCommentService.addComment(commentRequest, userDetails.getId()));
     }
 
     @Operation(summary = "Get current user statistics")
@@ -127,8 +128,8 @@ public class ApiGeneralController {
     @PreAuthorize("hasAuthority('user:moderate')")
     public ResponseEntity<ResultResponse> moderation(@RequestBody @Parameter(description = """
             Request body with info for moderation
-            """) ModerationRequest moderationRequest, @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.ok(postService.moderation(moderationRequest, userDetails));
+            """) ModerationRequest moderationRequest, @AuthenticationPrincipal CustomUserDetails userDetails) {
+        return ResponseEntity.ok(postService.moderation(moderationRequest, userDetails.getId()));
     }
 
     @Operation(summary = "Update blog settings")

@@ -70,15 +70,14 @@ class PostServiceTest {
 
     @Test
     void addPost_ShouldReturnSuccessResponse() {
+        int userId = 1;
         PostRequest request = new PostRequest();
         main.model.User user = mock(main.model.User.class);
-        UserDetails userDetails = mock(UserDetails.class);
 
-        when(userDetails.getUsername()).thenReturn("test@example.com");
-        when(usersRepository.findUserByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(usersRepository.getReferenceById(userId)).thenReturn(user);
         when(postMapper.fromPostRequestToPost(request, user)).thenReturn(mock(Post.class));
 
-        ResultResponse response = postService.addPost(request, userDetails);
+        ResultResponse response = postService.addPost(request, userId);
 
         assertTrue(response.isResult());
         verify(postsRepository).save(any(Post.class));
@@ -86,17 +85,16 @@ class PostServiceTest {
 
     @Test
     void makePostVote_ShouldReturnSuccessResponse() {
+        int userId = 1;
         PostVoteRequest voteRequest = new PostVoteRequest();
         voteRequest.setPostId(42);
         Post post = mock(Post.class);
         main.model.User user = mock(main.model.User.class);
-        UserDetails userDetails = mock(UserDetails.class);
 
-        when(userDetails.getUsername()).thenReturn("test@example.com");
-        when(usersRepository.findUserByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(usersRepository.getReferenceById(userId)).thenReturn(user);
         when(postsRepository.findById(42)).thenReturn(Optional.of(post));
 
-        ResultResponse response = postService.makePostVote(voteRequest, (byte) 1, userDetails);
+        ResultResponse response = postService.makePostVote(voteRequest, (byte) 1, userId);
 
         assertTrue(response.isResult());
         verify(post).addVote(any(PostVote.class));
@@ -105,38 +103,35 @@ class PostServiceTest {
 
     @Test
     void moderation_ShouldAcceptPost() {
+        int moderatorId = 101;
         ModerationRequest request = new ModerationRequest();
         request.setPostId(7);
         request.setDecision("accept");
-        UserDetails userDetails = mock(UserDetails.class);
 
         Post post = new Post();
 
-        when(userDetails.getUsername()).thenReturn("test@example.com");
         when(postsRepository.findById(7)).thenReturn(Optional.of(post));
-        when(usersRepository.findUserIdByEmail("test@example.com")).thenReturn(Optional.of(101));
 
-        ResultResponse response = postService.moderation(request, userDetails);
+        ResultResponse response = postService.moderation(request, moderatorId);
 
         assertTrue(response.isResult());
         assertEquals(ModerationStatus.ACCEPTED, post.getModerationStatus());
-        assertEquals(101, post.getModeratorId());
+        assertEquals(moderatorId, post.getModeratorId());
         verify(postsRepository).save(post);
     }
 
     @Test
     void updatePost_ShouldReturnSuccessResponse() {
+        int userId = 1;
         int postId = 123;
         PostRequest request = new PostRequest();
         main.model.User user = mock(main.model.User.class);
         Post post = mock(Post.class);
-        UserDetails userDetails = mock(UserDetails.class);
 
-        when(userDetails.getUsername()).thenReturn("test@example.com");
-        when(usersRepository.findUserByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(usersRepository.getReferenceById(userId)).thenReturn(user);
         when(postMapper.fromPostRequestToPost(postId, request, user)).thenReturn(post);
 
-        ResultResponse result = postService.updatePost(postId, request, userDetails);
+        ResultResponse result = postService.updatePost(postId, request, userId);
 
         assertTrue(result.isResult());
         verify(postsRepository).save(post);
