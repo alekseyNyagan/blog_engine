@@ -2,30 +2,23 @@ package main.service;
 
 import main.api.response.StatisticsResponse;
 import main.repository.PostsRepository;
-import main.repository.UsersRepository;
-import main.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.text.MessageFormat;
 
 @Service
 public class StatisticsService {
 
     private final PostsRepository postsRepository;
-    private final UsersRepository usersRepository;
+    private final UserService userService;
 
     @Autowired
-    public StatisticsService(PostsRepository postsRepository, UsersRepository usersRepository) {
+    public StatisticsService(PostsRepository postsRepository, UserService userService) {
         this.postsRepository = postsRepository;
-        this.usersRepository = usersRepository;
+        this.userService = userService;
     }
 
-    public StatisticsResponse getMyStatistics() {
-        String email = SecurityUtils.getCurrentUserEmail();
-        int userId = usersRepository.findUserIdByEmail(email).orElseThrow(() ->
-                new UsernameNotFoundException(MessageFormat.format("User {0} not found", email)));
+    public StatisticsResponse getMyStatistics(String email) {
+        int userId = userService.getUserByEmail(email).getId();
         return postsRepository.getMyStatistic(userId);
     }
 

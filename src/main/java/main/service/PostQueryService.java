@@ -8,12 +8,10 @@ import main.model.enums.ModerationStatus;
 import main.repository.PostsRepository;
 import main.service.strategy.enums.FilterMode;
 import main.service.strategy.filter.FilterStrategy;
-import main.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,10 +85,8 @@ public class PostQueryService {
         return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
-    public PostsResponse getMyPosts(int offset, int limit, String status) {
+    public PostsResponse getMyPosts(int offset, int limit, String status, String email) {
         Page<PostFlatDto> posts = Page.empty();
-        User user = SecurityUtils.getCurrentUser();
-        String email = user.getUsername();
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
         switch (status) {
             case INACTIVE_POST_STATUS -> posts = postsRepository.findPostsByUser(email, page);

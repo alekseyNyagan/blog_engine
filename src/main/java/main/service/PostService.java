@@ -16,10 +16,9 @@ import main.repository.PostCommentsRepository;
 import main.repository.PostsRepository;
 import main.repository.TagsRepository;
 import main.repository.UsersRepository;
-import main.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,15 +56,14 @@ public class PostService {
     }
 
     @Transactional
-    public PostDetailsDto getPostById(int id) {
+    public PostDetailsDto getPostById(int id, UserDetails userDetails) {
         PostDetailsFlatDto postDetailsDto = postsRepository.findPostDetailsById(id).orElseThrow(() ->
                 new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         int viewCount = postDetailsDto.viewCount();
-        if (!SecurityUtils.isAuthenticated()) {
+        if (userDetails == null) {
             postsRepository.updateViewCount(++viewCount, id);
         } else {
-            User user = SecurityUtils.getCurrentUser();
-            if (!postDetailsDto.email().equals(user.getUsername()) && !user.getAuthorities().contains(new SimpleGrantedAuthority("user:moderate"))) {
+            if (!postDetailsDto.email().equals(userDetails.getUsername()) && !userDetails.getAuthorities().contains(new SimpleGrantedAuthority("user:moderate"))) {
                 postsRepository.updateViewCount(++viewCount, id);
             }
         }
@@ -80,22 +78,22 @@ public class PostService {
     }
 
     @Transactional
-    public ResultResponse addPost(PostRequest postRequest) {
-        Post post = postMapper.fromPostRequestToPost(postRequest, getEntityOfAuthenticatedUser());
+    public ResultResponse addPost(PostRequest postRequest, UserDetails userDetails) {
+        Post post = postMapper.fromPostRequestToPost(postRequest, getEntityOfAuthenticatedUser(userDetails));
         postsRepository.save(post);
         return new ResultResponse(true);
     }
 
     @Transactional
-    public ResultResponse updatePost(int id, PostRequest postRequest) {
-        Post post = postMapper.fromPostRequestToPost(id, postRequest, getEntityOfAuthenticatedUser());
+    public ResultResponse updatePost(int id, PostRequest postRequest, UserDetails userDetails) {
+        Post post = postMapper.fromPostRequestToPost(id, postRequest, getEntityOfAuthenticatedUser(userDetails));
         postsRepository.save(post);
         return new ResultResponse(true);
     }
 
     @Transactional
-    public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue) {
-        main.model.User currentUser = getEntityOfAuthenticatedUser();
+    public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue, UserDetails userDetails) {
+        main.model.User currentUser = getEntityOfAuthenticatedUser(userDetails);
         Post post = postsRepository.findById(postVoteRequest.getPostId()).
                 orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
         PostVote postVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
@@ -105,11 +103,10 @@ public class PostService {
     }
 
     @Transactional
-    public ResultResponse moderation(ModerationRequest moderationRequest) {
+    public ResultResponse moderation(ModerationRequest moderationRequest, UserDetails userDetails) {
         Post post = postsRepository.findById(moderationRequest.getPostId())
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        User user = SecurityUtils.getCurrentUser();
-        String email = user.getUsername();
+        String email = userDetails.getUsername();
         Integer moderatorId = usersRepository.findUserIdByEmail(email).orElseThrow(() ->
                 new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
 
@@ -128,8 +125,8 @@ public class PostService {
         return imageService.uploadImage(multipartFile);
     }
 
-    private main.model.User getEntityOfAuthenticatedUser() {
-        String email = SecurityUtils.getCurrentUserEmail();
+    private main.model.User getEntityOfAuthenticatedUser(UserDetails userDetails) {
+        String email = userDetails.getUsername();
         return usersRepository.findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
     }

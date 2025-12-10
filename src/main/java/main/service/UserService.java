@@ -10,7 +10,6 @@ import main.mapper.UserMapper;
 import main.model.User;
 import main.repository.UsersRepository;
 import main.utils.RandomUtil;
-import main.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -92,8 +91,7 @@ public class UserService {
                         new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
         SecurityContextHolder.getContext().setAuthentication(auth);
 
-        String email = SecurityUtils.getCurrentUserEmail();
-        return getLoginResponse(email);
+        return getLoginResponse(loginRequest.getEmail());
     }
 
     public LoginResponse check(String email) {
@@ -105,15 +103,14 @@ public class UserService {
         return new ResultResponse(true);
     }
 
-    public User getUser() {
-        String email = SecurityUtils.getCurrentUserEmail();
+    public User getUserByEmail(String email) {
         return usersRepository.findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
     }
 
     @Transactional
-    public ErrorsResponse updateUser(UpdateProfileRequest updateProfileRequest) {
-        User user = getUser();
+    public ErrorsResponse updateUser(UpdateProfileRequest updateProfileRequest, String email) {
+        User user = getUserByEmail(email);
         updateBasicUserInfo(updateProfileRequest, user);
 
         if (updateProfileRequest.getRemovePhoto() == REMOVE_PHOTO_OPTION) {
@@ -125,7 +122,7 @@ public class UserService {
     }
 
     @Transactional
-    public ErrorsResponse updateUserWithPhoto(UpdateProfileRequest updateProfileRequest) throws IOException {
+    public ErrorsResponse updateUserWithPhoto(UpdateProfileRequest updateProfileRequest, String email) throws IOException {
         Map<String, String> errors = new HashMap<>();
         MultipartFile multipartFile = (MultipartFile) updateProfileRequest.getPhoto();
 
@@ -134,7 +131,7 @@ public class UserService {
             return new ErrorsResponse(false, errors);
         }
 
-        User user = getUser();
+        User user = getUserByEmail(email);
         updateBasicUserInfo(updateProfileRequest, user);
         user.setPhoto(imageService.processAndEncodeImage(multipartFile));
         usersRepository.save(user);

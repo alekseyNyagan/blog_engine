@@ -8,8 +8,7 @@ import main.repository.PostCommentsRepository;
 import main.repository.PostsRepository;
 import main.repository.UsersRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,12 +34,11 @@ public class PostCommentService {
     }
 
     @Transactional
-    public CommentResponse addComment(CommentRequest commentRequest) {
+    public CommentResponse addComment(CommentRequest commentRequest, UserDetails userDetails) {
         CommentResponse commentResponse = new CommentResponse();
         Post post = postsRepository.findById(commentRequest.getPostId())
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email = user.getUsername();
+        String email = userDetails.getUsername();
         main.model.User currentUser = usersRepository
                 .findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_ERROR_PATTERN, email)));

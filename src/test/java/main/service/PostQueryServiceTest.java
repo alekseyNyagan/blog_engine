@@ -8,7 +8,6 @@ import main.model.enums.ModerationStatus;
 import main.repository.PostsRepository;
 import main.service.strategy.enums.FilterMode;
 import main.service.strategy.filter.FilterStrategy;
-import main.utils.SecurityUtilsTestHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -123,13 +122,11 @@ class PostQueryServiceTest {
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusInactive() {
-        SecurityUtilsTestHelper.setAuthenticatedUser("test@example.com", List.of("ROLE_USER"));
-
         Page<PostFlatDto> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUser("test@example.com", PageRequest.of(0, 10))).thenReturn(page);
         when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
 
-        PostsResponse response = postQueryService.getMyPosts(0, 10, "inactive");
+        PostsResponse response = postQueryService.getMyPosts(0, 10, "inactive", "test@example.com");
 
         assertEquals(1, response.getCount());
         assertEquals(List.of(postDto), response.getPosts());
@@ -137,13 +134,11 @@ class PostQueryServiceTest {
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusPending() {
-        SecurityUtilsTestHelper.setAuthenticatedUser("test@example.com", List.of("ROLE_USER"));
-
         Page<PostFlatDto> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUserAndModerationStatus("test@example.com", ModerationStatus.NEW, PageRequest.of(0, 10))).thenReturn(page);
         when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
 
-        PostsResponse response = postQueryService.getMyPosts(0, 10, "pending");
+        PostsResponse response = postQueryService.getMyPosts(0, 10, "pending", "test@example.com");
 
         assertEquals(1, response.getCount());
         assertEquals(List.of(postDto), response.getPosts());
@@ -151,13 +146,11 @@ class PostQueryServiceTest {
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusDeclined() {
-        SecurityUtilsTestHelper.setAuthenticatedUser("test@example.com", List.of("ROLE_USER"));
-
         Page<PostFlatDto> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUserAndModerationStatus("test@example.com", ModerationStatus.DECLINED, PageRequest.of(0, 10))).thenReturn(page);
         when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
 
-        PostsResponse response = postQueryService.getMyPosts(0, 10, "declined");
+        PostsResponse response = postQueryService.getMyPosts(0, 10, "declined", "test@example.com");
 
         assertEquals(1, response.getCount());
         assertEquals(List.of(postDto), response.getPosts());
@@ -165,13 +158,11 @@ class PostQueryServiceTest {
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusPublished() {
-        SecurityUtilsTestHelper.setAuthenticatedUser("test@example.com", List.of("ROLE_USER"));
-
         Page<PostFlatDto> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUserAndModerationStatus("test@example.com", ModerationStatus.ACCEPTED, PageRequest.of(0, 10))).thenReturn(page);
         when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
 
-        PostsResponse response = postQueryService.getMyPosts(0, 10, "published");
+        PostsResponse response = postQueryService.getMyPosts(0, 10, "published", "test@example.com");
 
         assertEquals(1, response.getCount());
         assertEquals(List.of(postDto), response.getPosts());
@@ -179,9 +170,7 @@ class PostQueryServiceTest {
 
     @Test
     void getMyPosts_ShouldReturnEmpty_WhenStatusUnknown() {
-        SecurityUtilsTestHelper.setAuthenticatedUser("test@example.com", List.of("ROLE_USER"));
-
-        PostsResponse response = postQueryService.getMyPosts(0, 10, "unknown_status");
+        PostsResponse response = postQueryService.getMyPosts(0, 10, "unknown_status", "test@example.com");
 
         assertEquals(0, response.getCount());
         assertTrue(response.getPosts().isEmpty());

@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Post controller", description = "Controller for operations that related to posts")
@@ -70,8 +72,9 @@ public class ApiPostController {
 
     @Operation(summary = "Get post by id")
     @GetMapping("/{id}")
-    public ResponseEntity<PostDetailsDto> getPostById(@PathVariable @Parameter(description = "Post id") int id) {
-        return ResponseEntity.status(HttpStatus.OK).body(postService.getPostById(id));
+    public ResponseEntity<PostDetailsDto> getPostById(@PathVariable @Parameter(description = "Post id") int id,
+                                                      @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.status(HttpStatus.OK).body(postService.getPostById(id, userDetails));
     }
 
     @Operation(summary = "Get posts that need moderation")
@@ -88,8 +91,8 @@ public class ApiPostController {
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<PostsResponse> getMyPosts(@RequestParam @Parameter(description = "Offset for pagination") int offset
             , @RequestParam @Parameter(description = "Limit of posts for pagination") int limit
-            , @RequestParam @Parameter(description = "Moderation status of posts") String status) {
-        return new ResponseEntity<>(postQueryService.getMyPosts(offset, limit, status), HttpStatus.OK);
+            , @RequestParam @Parameter(description = "Moderation status of posts") String status, @AuthenticationPrincipal UserDetails userDetails) {
+        return new ResponseEntity<>(postQueryService.getMyPosts(offset, limit, status, userDetails.getUsername()), HttpStatus.OK);
     }
 
     @Operation(summary = "Add post", description = "Add new post")
@@ -97,8 +100,8 @@ public class ApiPostController {
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<ResultResponse> addPost(@RequestBody @Parameter(description = """
             Request body for posting new post
-            """) @Valid PostRequest postRequest) {
-        return ResponseEntity.ok(postService.addPost(postRequest));
+            """) @Valid PostRequest postRequest, @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(postService.addPost(postRequest, userDetails));
     }
 
     @Operation(summary = "Update post")
@@ -107,21 +110,21 @@ public class ApiPostController {
     public ResponseEntity<ResultResponse> updatePost(@PathVariable @Parameter(description = "Post id to update") int id
             , @RequestBody @Parameter(description = """
             Request body for updating post
-            """) PostRequest postRequest) {
-        return ResponseEntity.ok(postService.updatePost(id, postRequest));
+            """) PostRequest postRequest, @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(postService.updatePost(id, postRequest, userDetails));
     }
 
     @Operation(summary = "Make like")
     @PostMapping("/like")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResultResponse like(@RequestBody @Parameter(description = "Request body for making post like") PostVoteRequest postVoteRequest) {
-        return postService.makePostVote(postVoteRequest, (byte) 1);
+    public ResultResponse like(@RequestBody @Parameter(description = "Request body for making post like") PostVoteRequest postVoteRequest, @AuthenticationPrincipal UserDetails userDetails) {
+        return postService.makePostVote(postVoteRequest, (byte) 1, userDetails);
     }
 
     @Operation(summary = "Make dislike")
     @PostMapping("/dislike")
     @PreAuthorize("hasAuthority('user:write')")
-    public ResultResponse dislike(@RequestBody @Parameter(description = "Request body for making post dislike") PostVoteRequest postVoteRequest) {
-        return postService.makePostVote(postVoteRequest, (byte) -1);
+    public ResultResponse dislike(@RequestBody @Parameter(description = "Request body for making post dislike") PostVoteRequest postVoteRequest, @AuthenticationPrincipal UserDetails userDetails) {
+        return postService.makePostVote(postVoteRequest, (byte) -1, userDetails);
     }
 }

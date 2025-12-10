@@ -16,14 +16,12 @@ import main.repository.PostCommentsRepository;
 import main.repository.PostsRepository;
 import main.repository.TagsRepository;
 import main.repository.UsersRepository;
-import main.utils.SecurityUtilsTestHelper;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.List;
 import java.util.Optional;
@@ -49,21 +47,13 @@ class PostServiceTest {
     @InjectMocks
     private PostService postService;
 
-    @BeforeEach
-    void setUp() {
-        SecurityUtilsTestHelper.setAuthenticatedUser("test@example.com", List.of("ROLE_USER"));
-    }
-
-    @AfterEach
-    void tearDown() {
-        SecurityUtilsTestHelper.clearAuthentication();
-    }
-
     @Test
     void getPostById_ShouldReturnPostDetailsDto_WhenPostExists() {
         int postId = 1;
         PostDetailsFlatDto flatDto = mock(PostDetailsFlatDto.class);
+        UserDetails userDetails = mock(UserDetails.class);
 
+        when(userDetails.getUsername()).thenReturn("test@example.com");
         when(flatDto.viewCount()).thenReturn(5);
         when(flatDto.email()).thenReturn("author@example.com");
         when(postsRepository.findPostDetailsById(postId)).thenReturn(Optional.of(flatDto));
@@ -72,7 +62,7 @@ class PostServiceTest {
         when(postMapper.toCurrentPostDto(flatDto, List.of(), List.of()))
                 .thenReturn(mock(PostDetailsDto.class));
 
-        PostDetailsDto result = postService.getPostById(postId);
+        PostDetailsDto result = postService.getPostById(postId, userDetails);
 
         assertNotNull(result);
         verify(postsRepository).updateViewCount(6, postId);
@@ -82,11 +72,13 @@ class PostServiceTest {
     void addPost_ShouldReturnSuccessResponse() {
         PostRequest request = new PostRequest();
         main.model.User user = mock(main.model.User.class);
+        UserDetails userDetails = mock(UserDetails.class);
 
+        when(userDetails.getUsername()).thenReturn("test@example.com");
         when(usersRepository.findUserByEmail("test@example.com")).thenReturn(Optional.of(user));
         when(postMapper.fromPostRequestToPost(request, user)).thenReturn(mock(Post.class));
 
-        ResultResponse response = postService.addPost(request);
+        ResultResponse response = postService.addPost(request, userDetails);
 
         assertTrue(response.isResult());
         verify(postsRepository).save(any(Post.class));
@@ -98,11 +90,13 @@ class PostServiceTest {
         voteRequest.setPostId(42);
         Post post = mock(Post.class);
         main.model.User user = mock(main.model.User.class);
+        UserDetails userDetails = mock(UserDetails.class);
 
+        when(userDetails.getUsername()).thenReturn("test@example.com");
         when(usersRepository.findUserByEmail("test@example.com")).thenReturn(Optional.of(user));
         when(postsRepository.findById(42)).thenReturn(Optional.of(post));
 
-        ResultResponse response = postService.makePostVote(voteRequest, (byte) 1);
+        ResultResponse response = postService.makePostVote(voteRequest, (byte) 1, userDetails);
 
         assertTrue(response.isResult());
         verify(post).addVote(any(PostVote.class));
@@ -114,13 +108,15 @@ class PostServiceTest {
         ModerationRequest request = new ModerationRequest();
         request.setPostId(7);
         request.setDecision("accept");
+        UserDetails userDetails = mock(UserDetails.class);
 
         Post post = new Post();
 
+        when(userDetails.getUsername()).thenReturn("test@example.com");
         when(postsRepository.findById(7)).thenReturn(Optional.of(post));
         when(usersRepository.findUserIdByEmail("test@example.com")).thenReturn(Optional.of(101));
 
-        ResultResponse response = postService.moderation(request);
+        ResultResponse response = postService.moderation(request, userDetails);
 
         assertTrue(response.isResult());
         assertEquals(ModerationStatus.ACCEPTED, post.getModerationStatus());
@@ -134,11 +130,13 @@ class PostServiceTest {
         PostRequest request = new PostRequest();
         main.model.User user = mock(main.model.User.class);
         Post post = mock(Post.class);
+        UserDetails userDetails = mock(UserDetails.class);
 
+        when(userDetails.getUsername()).thenReturn("test@example.com");
         when(usersRepository.findUserByEmail("test@example.com")).thenReturn(Optional.of(user));
         when(postMapper.fromPostRequestToPost(postId, request, user)).thenReturn(post);
 
-        ResultResponse result = postService.updatePost(postId, request);
+        ResultResponse result = postService.updatePost(postId, request, userDetails);
 
         assertTrue(result.isResult());
         verify(postsRepository).save(post);

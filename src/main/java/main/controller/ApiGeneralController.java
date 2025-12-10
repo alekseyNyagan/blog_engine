@@ -8,6 +8,7 @@ import main.api.request.CommentRequest;
 import main.api.request.ModerationRequest;
 import main.api.request.UpdateProfileRequest;
 import main.api.response.*;
+import main.model.User;
 import main.repository.TagsRepository;
 import main.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -76,43 +79,47 @@ public class ApiGeneralController {
     @PreAuthorize("hasAuthority('user:write')")
     public ResponseEntity<CommentResponse> addComment(@RequestBody @Parameter(description = """
             Comment text and post id that user want to add to and id of comment to reply to
-            """) @Valid CommentRequest commentRequest) {
-        return ResponseEntity.status(HttpStatus.OK).body(postCommentService.addComment(commentRequest));
+            """) @Valid CommentRequest commentRequest, @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.status(HttpStatus.OK).body(postCommentService.addComment(commentRequest, userDetails));
     }
 
     @Operation(summary = "Get current user statistics")
     @GetMapping("/statistics/my")
     @PreAuthorize("hasAuthority('user:write')")
-    public StatisticsResponse getMyStatistic() {
-        return statisticsService.getMyStatistics();
+    public StatisticsResponse getMyStatistic(@AuthenticationPrincipal UserDetails userDetails) {
+        return statisticsService.getMyStatistics(userDetails.getUsername());
     }
 
     @Operation(summary = "Get entire blog statistics")
     @GetMapping("/statistics/all")
-    public ResponseEntity<StatisticsResponse> getAllStatistic() {
-        if (Boolean.TRUE.equals(!globalSettingsService.getGlobalSettings().get("MULTIUSER_MODE")) && userService.getUser().getIsModerator() != 1) {
-            return ResponseEntity.status(401).build();
-        } else {
-            return ResponseEntity.ok(statisticsService.getAllStatistics());
+    public ResponseEntity<StatisticsResponse> getAllStatistic(@AuthenticationPrincipal UserDetails userDetails) {
+        if (Boolean.TRUE.equals(!globalSettingsService.getGlobalSettings().get("MULTIUSER_MODE"))) {
+            User user = userService.getUserByEmail(userDetails.getUsername());
+            if (user.getIsModerator() != 1) {
+                return ResponseEntity.status(401).build();
+            }
         }
+        return ResponseEntity.ok(statisticsService.getAllStatistics());
     }
 
     @Operation(summary = "Update user profile")
     @PostMapping(value = "/profile/my", consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAuthority('user:write')")
-    public ErrorsResponse updateProfile(@RequestBody @Parameter(description = """
-            Request body with info for updating profile of user
-            """) UpdateProfileRequest updateProfileRequest) {
-        return userService.updateUser(updateProfileRequest);
+    public ErrorsResponse updateProfile(@AuthenticationPrincipal UserDetails userDetails,
+                                        @RequestBody @Parameter(description = """
+                                                Request body with info for updating profile of user
+                                                """) UpdateProfileRequest updateProfileRequest) {
+        return userService.updateUser(updateProfileRequest, userDetails.getUsername());
     }
 
     @Operation(summary = "Update user profile with photo")
     @PostMapping(value = "/profile/my", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAuthority('user:write')")
-    public ErrorsResponse updateProfileWithPhoto(@ModelAttribute @Parameter(description = """
-            Request body with info for updating profile of user
-            """) UpdateProfileRequest updateProfileRequest) throws IOException {
-        return userService.updateUserWithPhoto(updateProfileRequest);
+    public ErrorsResponse updateProfileWithPhoto(@AuthenticationPrincipal UserDetails userDetails,
+                                                 @ModelAttribute @Parameter(description = """
+                                                         Request body with info for updating profile of user
+                                                         """) UpdateProfileRequest updateProfileRequest) throws IOException {
+        return userService.updateUserWithPhoto(updateProfileRequest, userDetails.getUsername());
     }
 
     @Operation(summary = "Moderate post", description = "Records the action of the moderator: accept or decline the post")
@@ -120,8 +127,8 @@ public class ApiGeneralController {
     @PreAuthorize("hasAuthority('user:moderate')")
     public ResponseEntity<ResultResponse> moderation(@RequestBody @Parameter(description = """
             Request body with info for moderation
-            """) ModerationRequest moderationRequest) {
-        return ResponseEntity.ok(postService.moderation(moderationRequest));
+            """) ModerationRequest moderationRequest, @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(postService.moderation(moderationRequest, userDetails));
     }
 
     @Operation(summary = "Update blog settings")
