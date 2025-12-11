@@ -3,25 +3,24 @@ package main.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.mail.MessagingException;
+import jakarta.servlet.http.HttpServletRequest;
 import main.api.request.LoginRequest;
 import main.api.request.PasswordRequest;
 import main.api.request.RegistrationRequest;
 import main.api.request.RestoreRequest;
-import main.api.response.*;
+import main.api.response.CaptchaCodeResponse;
+import main.api.response.ErrorsResponse;
+import main.api.response.LoginResponse;
+import main.api.response.ResultResponse;
+import main.service.AuthService;
 import main.service.CaptchaCodeService;
 import main.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import jakarta.mail.MessagingException;
-import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 
 @Tag(name = "Authentication controller", description = "Controller for operations that relate to authentication")
@@ -31,12 +30,14 @@ public class ApiAuthController {
 
     private final CaptchaCodeService captchaCodeService;
     private final UserService usersService;
+    private final AuthService authService;
 
 
     @Autowired
-    public ApiAuthController(CaptchaCodeService captchaCodeService, UserService usersService) {
+    public ApiAuthController(CaptchaCodeService captchaCodeService, UserService usersService, AuthService authService) {
         this.captchaCodeService = captchaCodeService;
         this.usersService = usersService;
+        this.authService = authService;
     }
 
     @Operation(summary = "Check if user is logged in", description = """
@@ -47,7 +48,7 @@ public class ApiAuthController {
         if (principal == null) {
             return ResponseEntity.ok(new LoginResponse());
         }
-        return ResponseEntity.ok(usersService.check(principal.getName()));
+        return ResponseEntity.ok(authService.check(principal.getName()));
     }
 
     @Operation(summary = "Get picture of captcha from the server")
@@ -69,14 +70,14 @@ public class ApiAuthController {
     public ResponseEntity<LoginResponse> login(@RequestBody @Parameter(description = """
             Information with user credentials to login
             """) LoginRequest loginRequest) {
-        return ResponseEntity.ok(usersService.login(loginRequest));
+        return ResponseEntity.ok(authService.login(loginRequest));
     }
 
     @Operation(summary = "Logout user")
     @GetMapping("/logout")
     @PreAuthorize("hasAuthority('user:write')")
     public ResultResponse logout() {
-        return usersService.logout();
+        return authService.logout();
     }
 
     @Operation(summary = "Restore password", description = "Send information message to registered email to restore password")

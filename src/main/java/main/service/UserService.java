@@ -4,17 +4,12 @@ import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import main.api.request.*;
 import main.api.response.ErrorsResponse;
-import main.api.response.LoginResponse;
 import main.api.response.ResultResponse;
 import main.mapper.UserMapper;
 import main.model.User;
 import main.repository.UsersRepository;
 import main.utils.RandomUtil;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -47,18 +42,16 @@ public class UserService {
     private final UsersRepository usersRepository;
     private final CaptchaCodeService captchaCodeService;
     private final UserMapper mapper;
-    private final AuthenticationManager authenticationManager;
     private final PasswordEncoder passwordEncoder;
     private final ImageService imageService;
     private final MailService mailService;
 
     @Autowired
     public UserService(UsersRepository usersRepository, CaptchaCodeService captchaCodeService, UserMapper mapper, ImageService imageService,
-                       AuthenticationManager authenticationManager, PasswordEncoder passwordEncoder, MailService mailService) {
+                       PasswordEncoder passwordEncoder, MailService mailService) {
         this.usersRepository = usersRepository;
         this.captchaCodeService = captchaCodeService;
         this.mapper = mapper;
-        this.authenticationManager = authenticationManager;
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
         this.imageService = imageService;
@@ -83,24 +76,6 @@ public class UserService {
         }
         
         return new ErrorsResponse(false, errors);
-    }
-
-    public LoginResponse login(LoginRequest loginRequest) {
-        Authentication auth = authenticationManager
-                .authenticate(
-                        new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
-        SecurityContextHolder.getContext().setAuthentication(auth);
-
-        return getLoginResponse(loginRequest.getEmail());
-    }
-
-    public LoginResponse check(String email) {
-        return getLoginResponse(email);
-    }
-
-    public ResultResponse logout() {
-        SecurityContextHolder.clearContext();
-        return new ResultResponse(true);
     }
 
     public User getUserByEmail(String email) {
@@ -175,13 +150,6 @@ public class UserService {
         }
 
         return new ErrorsResponse(false, errors);
-    }
-
-    private LoginResponse getLoginResponse(String email) {
-        main.model.User authenticatedUser = usersRepository
-                .findUserByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException(email));
-        return new LoginResponse(true, mapper.toUserDto(authenticatedUser));
     }
 
     private void updateBasicUserInfo(UpdateProfileRequest updateProfileRequest, User user) {
