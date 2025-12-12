@@ -6,13 +6,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
-import main.api.response.*;
+import main.api.response.PostsResponse;
+import main.api.response.ResultResponse;
 import main.dto.PostDetailsDto;
+import main.dto.PostDetailsFlatDto;
 import main.model.enums.ModerationStatus;
 import main.security.CustomUserDetails;
 import main.service.PostQueryService;
-import main.service.strategy.enums.FilterMode;
 import main.service.PostService;
+import main.service.strategy.enums.FilterMode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -75,7 +77,10 @@ public class ApiPostController {
     @GetMapping("/{id}")
     public ResponseEntity<PostDetailsDto> getPostById(@PathVariable @Parameter(description = "Post id") int id,
                                                       @AuthenticationPrincipal UserDetails userDetails) {
-        return ResponseEntity.status(HttpStatus.OK).body(postService.getPostById(id, userDetails));
+        PostDetailsFlatDto postDetails = postService.getPostDetails(id);
+        postService.incrementViewCount(postDetails, userDetails);
+        PostDetailsDto responseDto = postService.buildFullPostDetailsDto(postDetails);
+        return ResponseEntity.status(HttpStatus.OK).body(responseDto);
     }
 
     @Operation(summary = "Get posts that need moderation")

@@ -6,24 +6,28 @@ import main.api.request.PostVoteRequest;
 import main.api.response.CalendarResponse;
 import main.api.response.ResultResponse;
 import main.dto.CalendarDTO;
-import main.dto.PostDetailsDto;
 import main.dto.PostDetailsFlatDto;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
+import main.model.User;
 import main.model.enums.ModerationStatus;
 import main.repository.PostCommentsRepository;
 import main.repository.PostsRepository;
 import main.repository.TagsRepository;
 import main.repository.UsersRepository;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -48,31 +52,78 @@ class PostServiceTest {
     private PostService postService;
 
     @Test
-    void getPostById_ShouldReturnPostDetailsDto_WhenPostExists() {
+    @DisplayName("getPostDetails should return flat DTO when post exists")
+    void getPostDetails_ShouldReturnDto_WhenPostExists() {
         int postId = 1;
-        PostDetailsFlatDto flatDto = mock(PostDetailsFlatDto.class);
-        UserDetails userDetails = mock(UserDetails.class);
+        PostDetailsFlatDto expectedDto = mock(PostDetailsFlatDto.class);
+        when(postsRepository.findPostDetailsById(postId)).thenReturn(Optional.of(expectedDto));
 
-        when(userDetails.getUsername()).thenReturn("test@example.com");
-        when(flatDto.viewCount()).thenReturn(5);
-        when(flatDto.email()).thenReturn("author@example.com");
-        when(postsRepository.findPostDetailsById(postId)).thenReturn(Optional.of(flatDto));
-        when(postCommentsRepository.findCommentsByPostId(postId)).thenReturn(List.of());
-        when(tagsRepository.findTagNamesByPostId(postId)).thenReturn(List.of());
-        when(postMapper.toCurrentPostDto(flatDto, List.of(), List.of()))
-                .thenReturn(mock(PostDetailsDto.class));
+        PostDetailsFlatDto actualDto = postService.getPostDetails(postId);
 
-        PostDetailsDto result = postService.getPostById(postId, userDetails);
+        assertNotNull(actualDto);
+        assertEquals(expectedDto, actualDto);
+    }
 
-        assertNotNull(result);
-        verify(postsRepository).updateViewCount(6, postId);
+    @Test
+    @DisplayName("getPostDetails should throw exception when post does not exist")
+    void getPostDetails_ShouldThrowException_WhenPostNotFound() {
+        int postId = 1;
+        when(postsRepository.findPostDetailsById(postId)).thenReturn(Optional.empty());
+
+        assertThrows(NoSuchElementException.class, () -> postService.getPostDetails(postId));
+    }
+
+    @Test
+    @DisplayName("incrementViewCount should increment when user is not authenticated")
+    void incrementViewCount_ShouldIncrement_WhenUserIsNull() {
+        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        postService.incrementViewCount(post, null);
+        verify(postsRepository, times(1)).updateViewCount(6, 1);
+    }
+
+    @Test
+    @DisplayName("incrementViewCount should not increment when user is the author")
+    void incrementViewCount_ShouldNotIncrement_WhenUserIsAuthor() {
+        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        UserDetails author = mock(UserDetails.class);
+        when(author.getUsername()).thenReturn("author@example.com");
+
+        postService.incrementViewCount(post, author);
+
+        verify(postsRepository, never()).updateViewCount(anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("incrementViewCount should not increment when user is a moderator")
+    void incrementViewCount_ShouldNotIncrement_WhenUserIsModerator() {
+        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        UserDetails moderator = mock(UserDetails.class);
+        doReturn(List.of(new SimpleGrantedAuthority("user:moderate"))).when(moderator).getAuthorities();
+
+        postService.incrementViewCount(post, moderator);
+
+        verify(postsRepository, never()).updateViewCount(anyInt(), anyInt());
+    }
+
+    @Test
+    @DisplayName("incrementViewCount should increment for regular user who is not the author")
+    void incrementViewCount_ShouldIncrement_ForOtherUser() {
+        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        UserDetails otherUser = mock(UserDetails.class);
+        when(otherUser.getUsername()).thenReturn("other@example.com");
+        doReturn(List.of(new SimpleGrantedAuthority("user:write"))).when(otherUser).getAuthorities();
+
+
+        postService.incrementViewCount(post, otherUser);
+
+        verify(postsRepository, times(1)).updateViewCount(6, 1);
     }
 
     @Test
     void addPost_ShouldReturnSuccessResponse() {
         int userId = 1;
         PostRequest request = new PostRequest();
-        main.model.User user = mock(main.model.User.class);
+        User user = mock(User.class);
 
         when(usersRepository.getReferenceById(userId)).thenReturn(user);
         when(postMapper.fromPostRequestToPost(request, user)).thenReturn(mock(Post.class));
@@ -89,7 +140,7 @@ class PostServiceTest {
         PostVoteRequest voteRequest = new PostVoteRequest();
         voteRequest.setPostId(42);
         Post post = mock(Post.class);
-        main.model.User user = mock(main.model.User.class);
+        User user = mock(User.class);
 
         when(usersRepository.getReferenceById(userId)).thenReturn(user);
         when(postsRepository.findById(42)).thenReturn(Optional.of(post));
@@ -125,7 +176,7 @@ class PostServiceTest {
         int userId = 1;
         int postId = 123;
         PostRequest request = new PostRequest();
-        main.model.User user = mock(main.model.User.class);
+        User user = mock(User.class);
         Post post = mock(Post.class);
 
         when(usersRepository.getReferenceById(userId)).thenReturn(user);

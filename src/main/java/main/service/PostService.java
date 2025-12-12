@@ -11,6 +11,7 @@ import main.dto.PostDetailsFlatDto;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
+import main.model.User;
 import main.model.enums.ModerationStatus;
 import main.repository.PostCommentsRepository;
 import main.repository.PostsRepository;
@@ -52,19 +53,33 @@ public class PostService {
         this.imageService = imageService;
     }
 
-    @Transactional
-    public PostDetailsDto getPostById(int id, UserDetails userDetails) {
-        PostDetailsFlatDto postDetailsDto = postsRepository.findPostDetailsById(id).orElseThrow(() ->
+    @Transactional(readOnly = true)
+    public PostDetailsFlatDto getPostDetails(int id) {
+        return postsRepository.findPostDetailsById(id).orElseThrow(() ->
                 new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        int viewCount = postDetailsDto.viewCount();
-        if (userDetails == null) {
-            postsRepository.updateViewCount(++viewCount, id);
-        } else {
-            if (!postDetailsDto.email().equals(userDetails.getUsername()) && !userDetails.getAuthorities().contains(new SimpleGrantedAuthority("user:moderate"))) {
-                postsRepository.updateViewCount(++viewCount, id);
-            }
+    }
+
+    @Transactional
+    public void incrementViewCount(PostDetailsFlatDto post, UserDetails userDetails) {
+        if (shouldIncrementViewCount(post, userDetails)) {
+            postsRepository.updateViewCount(post.viewCount() + 1, post.id());
         }
-        return postMapper.toCurrentPostDto(postDetailsDto, postCommentsRepository.findCommentsByPostId(id), tagsRepository.findTagNamesByPostId(id));
+    }
+
+    public PostDetailsDto buildFullPostDetailsDto(PostDetailsFlatDto postDetails) {
+        return postMapper.toCurrentPostDto(postDetails,
+                postCommentsRepository.findCommentsByPostId(postDetails.id()),
+                tagsRepository.findTagNamesByPostId(postDetails.id()));
+    }
+
+    private boolean shouldIncrementViewCount(PostDetailsFlatDto post, UserDetails user) {
+        if (user == null) {
+            return true;
+        }
+        if (user.getAuthorities().contains(new SimpleGrantedAuthority("user:moderate"))) {
+            return false;
+        }
+        return !post.email().equals(user.getUsername());
     }
 
     public CalendarResponse getCalendar(int year) {
@@ -76,25 +91,31 @@ public class PostService {
 
     @Transactional
     public ResultResponse addPost(PostRequest postRequest, int userId) {
-        main.model.User user = usersRepository.getReferenceById(userId);
-        Post post = postMapper.fromPostRequestToPost(postRequest, user);
-        postsRepository.save(post);
+        savePost(postRequest, userId, null);
         return new ResultResponse(true);
     }
 
     @Transactional
     public ResultResponse updatePost(int id, PostRequest postRequest, int userId) {
-        main.model.User user = usersRepository.getReferenceById(userId);
-        Post post = postMapper.fromPostRequestToPost(id, postRequest, user);
-        postsRepository.save(post);
+        savePost(postRequest, userId, id);
         return new ResultResponse(true);
+    }
+
+    private void savePost(PostRequest postRequest, int userId, Integer postId) {
+        User user = usersRepository.getReferenceById(userId);
+        Post post;
+        if (postId == null) {
+            post = postMapper.fromPostRequestToPost(postRequest, user);
+        } else {
+            post = postMapper.fromPostRequestToPost(postId, postRequest, user);
+        }
+        postsRepository.save(post);
     }
 
     @Transactional
     public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue, int userId) {
-        main.model.User currentUser = usersRepository.getReferenceById(userId);
-        Post post = postsRepository.findById(postVoteRequest.getPostId()).
-                orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
+        User currentUser = usersRepository.getReferenceById(userId);
+        Post post = findPostById(postVoteRequest.getPostId());
         PostVote postVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
         post.addVote(postVote);
         postsRepository.save(post);
@@ -103,8 +124,7 @@ public class PostService {
 
     @Transactional
     public ResultResponse moderation(ModerationRequest moderationRequest, int moderatorId) {
-        Post post = postsRepository.findById(moderationRequest.getPostId())
-                .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
+        Post post = findPostById(moderationRequest.getPostId());
 
         if (moderationRequest.getDecision().equals(ACCEPT_DECISION)) {
             post.setModerationStatus(ModerationStatus.ACCEPTED);
@@ -119,5 +139,10 @@ public class PostService {
 
     public Object image(MultipartFile multipartFile) throws IOException {
         return imageService.uploadImage(multipartFile);
+    }
+
+    private Post findPostById(int id) {
+        return postsRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
     }
 }
