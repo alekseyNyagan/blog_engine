@@ -103,14 +103,14 @@ public class ApiGeneralController {
         return ResponseEntity.ok(statisticsService.getAllStatistics());
     }
 
-    @Operation(summary = "Update user profile")
+    @Operation(summary = "Update user profile without photo")
     @PostMapping(value = "/profile/my", consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAuthority('user:write')")
-    public ErrorsResponse updateProfile(@AuthenticationPrincipal UserDetails userDetails,
-                                        @RequestBody @Parameter(description = """
-                                                Request body with info for updating profile of user
-                                                """) UpdateProfileRequest updateProfileRequest) {
-        return userService.updateUser(updateProfileRequest, userDetails.getUsername());
+    public ErrorsResponse updateProfileWithoutPhoto(@AuthenticationPrincipal UserDetails userDetails,
+                                                    @RequestBody @Parameter(description = """
+                                                            Request body with info for updating profile of user
+                                                            """) UpdateProfileRequest updateProfileRequest) throws IOException {
+        return userService.updateProfile(updateProfileRequest, null, userDetails.getUsername());
     }
 
     @Operation(summary = "Update user profile with photo")
@@ -119,8 +119,9 @@ public class ApiGeneralController {
     public ErrorsResponse updateProfileWithPhoto(@AuthenticationPrincipal UserDetails userDetails,
                                                  @ModelAttribute @Parameter(description = """
                                                          Request body with info for updating profile of user
-                                                         """) UpdateProfileRequest updateProfileRequest) throws IOException {
-        return userService.updateUserWithPhoto(updateProfileRequest, userDetails.getUsername());
+                                                         """) UpdateProfileRequest updateProfileRequest,
+                                                 @RequestParam("photo") MultipartFile photo) throws IOException {
+        return userService.updateProfile(updateProfileRequest, photo, userDetails.getUsername());
     }
 
     @Operation(summary = "Moderate post", description = "Records the action of the moderator: accept or decline the post")

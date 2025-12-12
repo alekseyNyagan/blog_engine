@@ -1,6 +1,7 @@
 package main.service;
 
 import main.api.request.RegistrationRequest;
+import main.api.request.UpdateProfileRequest;
 import main.api.response.ErrorsResponse;
 import main.mapper.UserMapper;
 import main.model.User;
@@ -11,13 +12,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,12 +30,14 @@ public class UserServiceTest {
 
     @Mock
     private UsersRepository usersRepository;
-
     @Mock
-    private CaptchaCodeService captchaCodeService;
-
+    private UserValidator userValidator;
     @Mock
     private UserMapper mapper;
+    @Mock
+    private ImageService imageService;
+    @Mock
+    private PasswordEncoder passwordEncoder;
 
     @InjectMocks
     private UserService userService;
@@ -39,14 +46,8 @@ public class UserServiceTest {
     @DisplayName("Should add user successfully")
     void testAddUser_Success() {
         RegistrationRequest registrationRequest = new RegistrationRequest();
-        registrationRequest.setEmail("test@example.com");
-        registrationRequest.setPassword("password");
-        registrationRequest.setCaptcha("12345");
-        registrationRequest.setCaptchaSecret("secret");
-
-        when(captchaCodeService.isCaptchaNotValid(anyString(), anyString())).thenReturn(false);
-        when(usersRepository.findUserByEmail(anyString())).thenReturn(Optional.empty());
-        when(mapper.fromRegistrationRequestToUser(any(RegistrationRequest.class))).thenReturn(new User());
+        when(userValidator.validateRegistration(registrationRequest)).thenReturn(Collections.emptyMap());
+        when(mapper.fromRegistrationRequestToUser(registrationRequest)).thenReturn(new User());
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 
@@ -55,19 +56,10 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Should not add user because user with same email already exists")
-    void testAddUser_EmailExists() {
+    @DisplayName("Should not add user when validation fails")
+    void testAddUser_ValidationFails() {
         RegistrationRequest registrationRequest = new RegistrationRequest();
-        registrationRequest.setEmail("test@example.com");
-        registrationRequest.setPassword("password");
-        registrationRequest.setCaptcha("12345");
-        registrationRequest.setCaptchaSecret("secret");
-
-        when(captchaCodeService.isCaptchaNotValid(anyString(), anyString())).thenReturn(false);
-
-        User existingUser = new User();
-        existingUser.setEmail("test@example.com");
-        when(usersRepository.findUserByEmail(anyString())).thenReturn(Optional.of(existingUser));
+        when(userValidator.validateRegistration(registrationRequest)).thenReturn(Map.of("email", "Email already exists"));
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 
@@ -77,20 +69,74 @@ public class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Should not add user because captcha is invalid")
-    void testAddUser_InvalidCaptcha() {
-        RegistrationRequest registrationRequest = new RegistrationRequest();
-        registrationRequest.setEmail("test@example.com");
-        registrationRequest.setPassword("password");
-        registrationRequest.setCaptcha("wrong-captcha");
-        registrationRequest.setCaptchaSecret("secret");
+    @DisplayName("Should update user profile successfully (no photo change)")
+    void testUpdateProfile_SuccessNoPhotoChange() throws IOException {
+        String email = "test@example.com";
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setName("New Name");
+        User user = new User();
 
-        when(captchaCodeService.isCaptchaNotValid(anyString(), anyString())).thenReturn(true);
+        when(usersRepository.findUserByEmail(email)).thenReturn(Optional.of(user));
 
-        ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
+        ErrorsResponse response = userService.updateProfile(request, null, email);
 
-        assertFalse(errorsResponse.isResult());
-        assertTrue(errorsResponse.getErrors().containsKey("captcha"));
-        verify(usersRepository, never()).save(any(User.class));
+        assertTrue(response.isResult());
+        assertEquals("New Name", user.getName());
+        verify(usersRepository, times(1)).save(user);
+    }
+
+    @Test
+    @DisplayName("Should update user profile and remove photo")
+    void testUpdateProfile_RemovePhoto() throws IOException {
+        String email = "test@example.com";
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        request.setRemovePhoto(1);
+        User user = new User();
+        user.setPhoto("path/to/old/photo.jpg");
+
+        when(usersRepository.findUserByEmail(email)).thenReturn(Optional.of(user));
+
+        ErrorsResponse response = userService.updateProfile(request, null, email);
+
+        assertTrue(response.isResult());
+        assertNull(user.getPhoto());
+        verify(usersRepository, times(1)).save(user);
+    }
+
+    @Test
+    @DisplayName("Should update user profile with new photo")
+    void testUpdateProfile_WithNewPhoto() throws IOException {
+        String email = "test@example.com";
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        User user = new User();
+        MultipartFile photo = new MockMultipartFile("photo", "new_photo.jpg", "image/jpeg", new byte[10]);
+
+        when(usersRepository.findUserByEmail(email)).thenReturn(Optional.of(user));
+        when(imageService.isImageSizeValid(photo)).thenReturn(false);
+        when(imageService.processAndEncodeImage(photo)).thenReturn("path/to/new/photo.jpg");
+
+        ErrorsResponse response = userService.updateProfile(request, photo, email);
+
+        assertTrue(response.isResult());
+        assertEquals("path/to/new/photo.jpg", user.getPhoto());
+        verify(usersRepository, times(1)).save(user);
+    }
+
+    @Test
+    @DisplayName("Should fail to update profile if photo is too large")
+    void testUpdateProfile_PhotoTooLarge() throws IOException {
+        String email = "test@example.com";
+        UpdateProfileRequest request = new UpdateProfileRequest();
+        User user = new User();
+        MultipartFile photo = new MockMultipartFile("photo", "large_photo.jpg", "image/jpeg", new byte[10]);
+
+        when(usersRepository.findUserByEmail(email)).thenReturn(Optional.of(user));
+        when(imageService.isImageSizeValid(photo)).thenReturn(true);
+
+        ErrorsResponse response = userService.updateProfile(request, photo, email);
+
+        assertFalse(response.isResult());
+        assertTrue(response.getErrors().containsKey("photo"));
+        verify(usersRepository, never()).save(user);
     }
 }

@@ -2,7 +2,10 @@ package main.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
-import main.api.request.*;
+import main.api.request.PasswordRequest;
+import main.api.request.RegistrationRequest;
+import main.api.request.RestoreRequest;
+import main.api.request.UpdateProfileRequest;
 import main.api.response.ErrorsResponse;
 import main.api.response.ResultResponse;
 import main.mapper.UserMapper;
@@ -18,7 +21,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.text.MessageFormat;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,30 +29,22 @@ public class UserService {
 
     private static final int HASH_LENGTH = 40;
     private static final int REMOVE_PHOTO_OPTION = 1;
-    private static final String CAPTCHA_ERROR_MESSAGE = "Код с картинки введён неверно";
-    private static final String CAPTCHA_ERROR_KEY = "captcha";
-    private static final String USER_WITH_EMAIL_EXISTS_ERROR_MESSAGE = "Пользователь с данным e-mail уже зарегистрирован";
-    private static final String USER_WITH_EMAIL_EXISTS_ERROR_KEY = "email";
     private static final String USER_NOT_FOUND_MESSAGE_PATTERN = "user with email {0} not found";
     private static final String PHOTO_SIZE_ERROR_MESSAGE = "Превышен допустимый размер фотографии (5MB)";
     private static final String PHOTO_SIZE_ERROR_KEY = "photo";
-    private static final String RESTORE_PASSWORD_LINK_EXPIRED_KEY = "code";
-    private static final String RESTORE_PASSWORD_LINK_EXPIRED_MESSAGE = """
-            Ссылка для восстановления пароля устарела.
-            <a href="/auth/restore">Запросить ссылку снова</a>
-            """;
+
     private final UsersRepository usersRepository;
-    private final CaptchaCodeService captchaCodeService;
+    private final UserValidator userValidator;
     private final UserMapper mapper;
     private final PasswordEncoder passwordEncoder;
     private final ImageService imageService;
     private final MailService mailService;
 
     @Autowired
-    public UserService(UsersRepository usersRepository, CaptchaCodeService captchaCodeService, UserMapper mapper, ImageService imageService,
+    public UserService(UsersRepository usersRepository, UserValidator userValidator, UserMapper mapper, ImageService imageService,
                        PasswordEncoder passwordEncoder, MailService mailService) {
         this.usersRepository = usersRepository;
-        this.captchaCodeService = captchaCodeService;
+        this.userValidator = userValidator;
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
@@ -59,23 +53,14 @@ public class UserService {
 
     @Transactional
     public ErrorsResponse addUser(RegistrationRequest registrationRequest) {
-        Map<String, String> errors = new HashMap<>();
-        
-        if (captchaCodeService.isCaptchaNotValid(registrationRequest.getCaptchaSecret(), registrationRequest.getCaptcha())) {
-            errors.put(CAPTCHA_ERROR_KEY, CAPTCHA_ERROR_MESSAGE);
+        Map<String, String> errors = userValidator.validateRegistration(registrationRequest);
+        if (!errors.isEmpty()) {
+            return new ErrorsResponse(false, errors);
         }
-        
-        if (usersRepository.findUserByEmail(registrationRequest.getEmail()).isPresent()) {
-            errors.put(USER_WITH_EMAIL_EXISTS_ERROR_KEY, USER_WITH_EMAIL_EXISTS_ERROR_MESSAGE);
-        }
-        
-        if (errors.isEmpty()) {
-            User user = mapper.fromRegistrationRequestToUser(registrationRequest);
-            usersRepository.save(user);
-            return new ErrorsResponse(true);
-        }
-        
-        return new ErrorsResponse(false, errors);
+
+        User user = mapper.fromRegistrationRequestToUser(registrationRequest);
+        usersRepository.save(user);
+        return new ErrorsResponse(true);
     }
 
     public User getUserByEmail(String email) {
@@ -84,33 +69,20 @@ public class UserService {
     }
 
     @Transactional
-    public ErrorsResponse updateUser(UpdateProfileRequest updateProfileRequest, String email) {
+    public ErrorsResponse updateProfile(UpdateProfileRequest request, MultipartFile photo, String email) throws IOException {
         User user = getUserByEmail(email);
-        updateBasicUserInfo(updateProfileRequest, user);
 
-        if (updateProfileRequest.getRemovePhoto() == REMOVE_PHOTO_OPTION) {
+        if (photo != null) {
+            if (imageService.isImageSizeValid(photo)) {
+                return new ErrorsResponse(false, Map.of(PHOTO_SIZE_ERROR_KEY, PHOTO_SIZE_ERROR_MESSAGE));
+            }
+            user.setPhoto(imageService.processAndEncodeImage(photo));
+        } else if (request.getRemovePhoto() == REMOVE_PHOTO_OPTION) {
             user.setPhoto(null);
         }
 
+        updateBasicUserInfo(request, user);
         usersRepository.save(user);
-        return new ErrorsResponse(true);
-    }
-
-    @Transactional
-    public ErrorsResponse updateUserWithPhoto(UpdateProfileRequest updateProfileRequest, String email) throws IOException {
-        Map<String, String> errors = new HashMap<>();
-        MultipartFile multipartFile = (MultipartFile) updateProfileRequest.getPhoto();
-
-        if (imageService.isImageSizeValid(multipartFile)) {
-            errors.put(PHOTO_SIZE_ERROR_KEY, PHOTO_SIZE_ERROR_MESSAGE);
-            return new ErrorsResponse(false, errors);
-        }
-
-        User user = getUserByEmail(email);
-        updateBasicUserInfo(updateProfileRequest, user);
-        user.setPhoto(imageService.processAndEncodeImage(multipartFile));
-        usersRepository.save(user);
-
         return new ErrorsResponse(true);
     }
 
@@ -132,24 +104,15 @@ public class UserService {
 
     @Transactional
     public ErrorsResponse password(PasswordRequest passwordRequest) {
-        Map<String, String> errors = new HashMap<>();
-
-        if (captchaCodeService.isCaptchaNotValid(passwordRequest.getCaptchaSecret(), passwordRequest.getCaptcha())) {
-            errors.put(CAPTCHA_ERROR_KEY, CAPTCHA_ERROR_MESSAGE);
+        Map<String, String> errors = userValidator.validatePasswordChange(passwordRequest);
+        if (!errors.isEmpty()) {
+            return new ErrorsResponse(false, errors);
         }
 
-        Optional<User> userOptional = usersRepository.findUserByCode(passwordRequest.getCode());
-        if (userOptional.isEmpty()) {
-            errors.put(RESTORE_PASSWORD_LINK_EXPIRED_KEY, RESTORE_PASSWORD_LINK_EXPIRED_MESSAGE);
-        }
-
-        if (errors.isEmpty()) {
-            User user = userOptional.get();
-            user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
-            return new ErrorsResponse(true);
-        }
-
-        return new ErrorsResponse(false, errors);
+        User user = usersRepository.findUserByCode(passwordRequest.getCode()).get();
+        user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
+        usersRepository.save(user);
+        return new ErrorsResponse(true);
     }
 
     private void updateBasicUserInfo(UpdateProfileRequest updateProfileRequest, User user) {
