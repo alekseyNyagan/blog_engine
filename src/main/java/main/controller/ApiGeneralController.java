@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import main.api.request.CommentRequest;
+import main.api.request.GlobalSettingsUpdateRequest;
 import main.api.request.ModerationRequest;
 import main.api.request.UpdateProfileRequest;
 import main.api.response.*;
@@ -136,9 +137,9 @@ public class ApiGeneralController {
     @Operation(summary = "Update blog settings")
     @PutMapping("/settings")
     @PreAuthorize("hasAuthority('user:moderate')")
-    public void updateGlobalSettings(@RequestBody @Parameter(description = """
+    public void updateGlobalSettings(@RequestBody @Valid @Parameter(description = """
             Request body with settings should be updated
-            """) Map<String, Boolean> globalSettings) {
+            """)GlobalSettingsUpdateRequest globalSettings) {
         globalSettingsService.updateGlobalSettings(globalSettings);
     }
 

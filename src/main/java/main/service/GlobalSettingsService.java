@@ -1,21 +1,20 @@
 package main.service;
 
+import main.api.request.GlobalSettingsUpdateRequest;
 import main.model.GlobalSetting;
+import main.model.enums.GlobalSettingCode;
 import main.repository.GlobalSettingsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
 public class GlobalSettingsService {
     private final GlobalSettingsRepository globalSettingsRepository;
-
-    private static final String MULTIUSER_MODE = "MULTIUSER_MODE";
-    private static final String POST_PREMODERATION = "POST_PREMODERATION";
-    private static final String STATISTICS_IS_PUBLIC = "STATISTICS_IS_PUBLIC";
 
     @Autowired
     public GlobalSettingsService(GlobalSettingsRepository globalSettingsRepository) {
@@ -24,18 +23,20 @@ public class GlobalSettingsService {
 
     public Map<String, Boolean> getGlobalSettings() {
        return globalSettingsRepository.findAll().stream()
-                .collect(Collectors.toMap(GlobalSetting::getCode, GlobalSetting::getValue));
+                .collect(Collectors.toMap(setting -> setting.getCode().name(), GlobalSetting::getValue));
     }
 
     @Transactional
-    public void updateGlobalSettings(Map<String, Boolean> globalSettings) {
-        Map<String, GlobalSetting> globalSettingsMap = globalSettingsRepository.findAll().stream()
-                .collect(Collectors.toMap(GlobalSetting::getCode, globalSetting -> globalSetting));
+    public void updateGlobalSettings(GlobalSettingsUpdateRequest request) {
+        Map<GlobalSettingCode, GlobalSetting> settingsMap = globalSettingsRepository.findAll().stream()
+                .collect(Collectors.toMap(GlobalSetting::getCode, Function.identity()));
 
-        globalSettingsMap.get(MULTIUSER_MODE).setValue(globalSettings.get(MULTIUSER_MODE));
-        globalSettingsMap.get(POST_PREMODERATION).setValue(globalSettings.get(POST_PREMODERATION));
-        globalSettingsMap.get(STATISTICS_IS_PUBLIC).setValue(globalSettings.get(STATISTICS_IS_PUBLIC));
+        request.getSettings().forEach((code, value) -> {
+            if (settingsMap.containsKey(code)) {
+                settingsMap.get(code).setValue(value);
+            }
+        });
 
-        globalSettingsRepository.saveAll(globalSettingsMap.values());
+        globalSettingsRepository.saveAll(settingsMap.values());
     }
 }

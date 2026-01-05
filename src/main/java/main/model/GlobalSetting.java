@@ -1,12 +1,10 @@
 package main.model;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import main.converter.hibernate.BooleanToYesNoConverter;
+import main.model.enums.GlobalSettingCode;
 
 @Setter
 @Getter
@@ -19,7 +17,8 @@ public class GlobalSetting extends AbstractEntity {
 
     @Column(name = "code")
     @NotNull
-    private String code;
+    @Enumerated(EnumType.STRING)
+    private GlobalSettingCode code;
 
     @Column(name = "name")
     @NotNull
@@ -29,9 +28,4 @@ public class GlobalSetting extends AbstractEntity {
     @NotNull
     @Convert(converter = BooleanToYesNoConverter.class)
     private Boolean value;
-
-    public GlobalSetting(String code, Boolean value) {
-        this.code = code;
-        this.value = value;
-    }
 }

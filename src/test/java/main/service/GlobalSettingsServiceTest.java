@@ -1,7 +1,8 @@
 package main.service;
 
-
+import main.api.request.GlobalSettingsUpdateRequest;
 import main.model.GlobalSetting;
+import main.model.enums.GlobalSettingCode;
 import main.repository.GlobalSettingsRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,9 +37,9 @@ class GlobalSettingsServiceTest {
     @Test
     @DisplayName("Should retrieve global settings successfully")
     void testGetGlobalSettings_Success() {
-        GlobalSetting multiuserModeSetting = new GlobalSetting("MULTIUSER_MODE", true);
-        GlobalSetting postPremoderationSetting = new GlobalSetting("POST_PREMODERATION", false);
-        GlobalSetting statisticsIsPublicSetting = new GlobalSetting("STATISTICS_IS_PUBLIC", true);
+        GlobalSetting multiuserModeSetting = new GlobalSetting(GlobalSettingCode.MULTIUSER_MODE, "Multiuser mode", true);
+        GlobalSetting postPremoderationSetting = new GlobalSetting(GlobalSettingCode.POST_PREMODERATION, "Post premoderation", false);
+        GlobalSetting statisticsIsPublicSetting = new GlobalSetting(GlobalSettingCode.STATISTICS_IS_PUBLIC, "Statistics is public", true);
 
         List<GlobalSetting> settingsList = Arrays.asList(multiuserModeSetting, postPremoderationSetting, statisticsIsPublicSetting);
         when(globalSettingsRepository.findAll()).thenReturn(settingsList);
@@ -60,23 +61,30 @@ class GlobalSettingsServiceTest {
     @Test
     @DisplayName("Should update global settings with valid data")
     void testUpdateGlobalSettings_Success() {
-        GlobalSetting multiuserModeSetting = new GlobalSetting("MULTIUSER_MODE", false);
-        GlobalSetting postPremoderationSetting = new GlobalSetting("POST_PREMODERATION", true);
-        GlobalSetting statisticsIsPublicSetting = new GlobalSetting("STATISTICS_IS_PUBLIC", false);
+        GlobalSetting multiuserModeSetting = new GlobalSetting(GlobalSettingCode.MULTIUSER_MODE, "Multiuser mode", false);
+        GlobalSetting postPremoderationSetting = new GlobalSetting(GlobalSettingCode.POST_PREMODERATION, "Post premoderation", true);
+        GlobalSetting statisticsIsPublicSetting = new GlobalSetting(GlobalSettingCode.STATISTICS_IS_PUBLIC, "Statistics is public", false);
 
         List<GlobalSetting> settingsList = Arrays.asList(multiuserModeSetting, postPremoderationSetting, statisticsIsPublicSetting);
         when(globalSettingsRepository.findAll()).thenReturn(settingsList);
 
-        Map<String, Boolean> settingsMap = Map.of(
-                "MULTIUSER_MODE", true,
-                "POST_PREMODERATION", false,
-                "STATISTICS_IS_PUBLIC", true);
+        GlobalSettingsUpdateRequest request = new GlobalSettingsUpdateRequest();
+        request.addSetting("MULTIUSER_MODE", true);
+        request.addSetting("POST_PREMODERATION", false);
+        request.addSetting("STATISTICS_IS_PUBLIC", true);
 
-        globalSettingsService.updateGlobalSettings(settingsMap);
+        globalSettingsService.updateGlobalSettings(request);
 
         verify(globalSettingsRepository, times(1)).saveAll(any());
         assertTrue(multiuserModeSetting.getValue());
         assertFalse(postPremoderationSetting.getValue());
         assertTrue(statisticsIsPublicSetting.getValue());
+    }
+
+    @Test
+    @DisplayName("Should throw an exception when updating with an unknown setting")
+    void testUpdateGlobalSettings_UnknownSetting() {
+        GlobalSettingsUpdateRequest request = new GlobalSettingsUpdateRequest();
+        assertThrows(IllegalArgumentException.class, () -> request.addSetting("UNKNOWN_SETTING", true));
     }
 }
