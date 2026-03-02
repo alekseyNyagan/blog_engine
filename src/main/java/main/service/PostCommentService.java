@@ -42,10 +42,10 @@ public class PostCommentService {
         postComment.setText(commentRequest.getText());
         if (commentRequest.getParentId() instanceof Integer parentId) {
             postCommentsRepository.findById(parentId).orElseThrow(() -> new NoSuchElementException(POST_COMMENT_NOT_FOUND_ERROR_MESSAGE));
-            postComment.setParentID(parentId);
+            postComment.setParentId(parentId);
         }
-        post.addComment(postComment);
-        postsRepository.save(post);
+        postComment.setPost(post);
+        postCommentsRepository.save(postComment);
         commentResponse.setId(postComment.getId());
         return commentResponse;
     }

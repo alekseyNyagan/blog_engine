@@ -72,19 +72,17 @@ public class Post extends AbstractEntity {
 
     public void addComment(PostComment comment) {
         if (comments == null) {
-            comments = List.of(comment);
-        } else {
-            comments.add(comment);
-            comment.setPost(this);
+            comments = new java.util.ArrayList<>();
         }
+        comment.setPost(this);
+        comments.add(comment);
     }
 
     public void addVote(PostVote vote) {
         if (votes == null) {
-            votes = Set.of(vote);
-        } else {
-            votes.add(vote);
-            vote.setPost(this);
+            votes = new java.util.HashSet<>();
         }
+        vote.setPost(this);
+        votes.add(vote);
     }
 }

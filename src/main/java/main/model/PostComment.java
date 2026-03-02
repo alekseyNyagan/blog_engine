@@ -19,7 +19,7 @@ import java.time.Instant;
 public class PostComment extends AbstractEntity {
 
     @Column(name = "parent_id")
-    private Integer parentID;
+    private Integer parentId;
 
     @NotNull
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
