@@ -11,6 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 @Service
 @Slf4j
@@ -23,34 +25,42 @@ public class CaptchaCodeService {
     private int captchaExpireTime;
     private final CaptchaCodeRepository captchaCodeRepository;
     private final ImageService imageService;
+    private final Cage cage;
 
     @Autowired
-    public CaptchaCodeService(CaptchaCodeRepository captchaCodeRepository, ImageService imageService) {
+    public CaptchaCodeService(CaptchaCodeRepository captchaCodeRepository, ImageService imageService, Cage cage) {
         this.captchaCodeRepository = captchaCodeRepository;
         this.imageService = imageService;
+        this.cage = cage;
     }
 
     @Transactional
     public CaptchaCodeResponse getCaptcha() {
         CaptchaCodeResponse captchaCodeResponse = new CaptchaCodeResponse();
         try {
-            Cage cage = new Cage();
             String code = cage.getTokenGenerator().next().substring(CODE_START_INDEX, CODE_END_INDEX);
             String secretCode = cage.getTokenGenerator().next();
+
             CaptchaCode captchaCode = new CaptchaCode();
             captchaCode.setCode(code);
             captchaCode.setSecretCode(secretCode);
+
             captchaCodeRepository.save(captchaCode);
+
             captchaCodeResponse.setImage(imageService.drawCaptchaImage(cage, code));
             captchaCodeResponse.setSecret(secretCode);
-            captchaCodeRepository.deleteAllByTimeBefore(captchaExpireTime);
+
+            Instant threshold = Instant.now().minus(1L, ChronoUnit.HOURS);
+            captchaCodeRepository.deleteAllByTimeLessThan(threshold);
         } catch (IOException exception) {
-            log.error("Ошибка генерации изображения капчи");
+            log.error("Ошибка генерации изображения капчи", exception);
         }
         return captchaCodeResponse;
     }
 
     public boolean isCaptchaNotValid(String secret, String value) {
-        return !captchaCodeRepository.findCaptchaCodeBySecretCode(secret).getCode().equals(value);
+        return captchaCodeRepository.findCaptchaCodeBySecretCode(secret)
+                .map(captcha -> !captcha.getCode().equals(value))
+                .orElse(true);
     }
 }
