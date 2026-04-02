@@ -1,14 +1,12 @@
 package main.security;
 
 import main.repository.UsersRepository;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
-import java.util.List;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -27,16 +25,8 @@ public class CustomUserDetailsService implements UserDetailsService {
                         user.getId(),
                         user.getEmail(),
                         user.getPassword(),
-                        getAuthorities(user.getIsModerator() == 1)
+                        user.getRole().getAuthorities()
                 ))
                 .orElseThrow(() -> new UsernameNotFoundException(MessageFormat.format(USER_NOT_FOUND_MESSAGE_PATTERN, email)));
-    }
-
-    private List<SimpleGrantedAuthority> getAuthorities(boolean isModerator) {
-        if (isModerator) {
-            return List.of(new SimpleGrantedAuthority("user:moderate"));
-        } else {
-            return List.of(new SimpleGrantedAuthority("user:write"));
-        }
     }
 }
