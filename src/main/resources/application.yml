@@ -1,17 +1,34 @@
-spring.datasource.url: ${MYSQL_DB_HOST}:${MYSQL_DB_PORT}/${MYSQL_SCHEMA_NAME}
-spring.datasource.username: ${MYSQL_USERNAME}
-spring.datasource.password: ${MYSQL_USER_PASSWORD}
-spring.jpa.hibernate.ddl-auto: validate
-spring.mvc.pathmatch.matching-strategy: ant_path_matcher
-spring.mail.host: smtp.gmail.com
-spring.mail.port: 587
-spring.mail.username: ${GMAIL_USERNAME}
-spring.mail.password: ${GMAIL_PASSWORD}
-spring.mail.properties.mail.smtp.auth: true
-spring.mail.properties.mail.smtp.starttls.enable: true
 spring:
+  datasource:
+    url: ${MYSQL_DB_HOST:jdbc:mysql}:${MYSQL_DB_PORT://localhost:3306}/${MYSQL_SCHEMA_NAME:blog_engine}
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_USER_PASSWORD:testtest}
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${GMAIL_USERNAME}
+    password: ${GMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  data:
+    redis:
+      username: default
+      host: ${DATA_REDIS_HOST:localhost}
+      port: ${DATA_REDIS_PORT:6379}
+      password: ${DATA_REDIS_PASSWORD:password}
+  session:
+    store-type: redis
 
 blog.title: DevPub
 blog.subtitle: Рассказы разработчиков
