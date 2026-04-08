@@ -1,14 +1,14 @@
-FROM maven:3.9.9 AS builder
+FROM maven:3.9.14-amazoncorretto-25-alpine AS builder
 WORKDIR /application
 COPY . .
 RUN --mount=type=cache,target=/root/.m2 mvn clean install -Dmaven.test.skip
 
-FROM amazoncorretto:21-alpine AS layers
+FROM amazoncorretto:25-alpine AS layers
 WORKDIR /application
 COPY --from=builder /application/target/*.jar app.jar
 RUN java -Djarmode=tools -jar app.jar extract --layers --destination extracted
 
-FROM amazoncorretto:21-alpine
+FROM amazoncorretto:25-alpine
 VOLUME /tmp
 
 WORKDIR /application
