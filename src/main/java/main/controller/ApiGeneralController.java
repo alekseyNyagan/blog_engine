@@ -9,7 +9,6 @@ import main.api.request.GlobalSettingsUpdateRequest;
 import main.api.request.ModerationRequest;
 import main.api.request.UpdateProfileRequest;
 import main.api.response.*;
-import main.model.User;
 import main.repository.TagsRepository;
 import main.security.CustomUserDetails;
 import main.service.*;
@@ -95,13 +94,10 @@ public class ApiGeneralController {
     @Operation(summary = "Get entire blog statistics")
     @GetMapping("/statistics/all")
     public ResponseEntity<StatisticsResponse> getAllStatistic(@AuthenticationPrincipal UserDetails userDetails) {
-        if (Boolean.TRUE.equals(!globalSettingsService.getGlobalSettings().get("MULTIUSER_MODE"))) {
-            User user = userService.getUserByEmail(userDetails.getUsername());
-            if (user.getIsModerator() != 1) {
-                return ResponseEntity.status(401).build();
-            }
+        if (shouldReturnAllStatistic(userDetails, globalSettingsService.getGlobalSettings().get("STATISTIC_IS_PUBLIC"))) {
+            return ResponseEntity.ok(statisticsService.getAllStatistics());
         }
-        return ResponseEntity.ok(statisticsService.getAllStatistics());
+            return ResponseEntity.status(401).build();
     }
 
     @Operation(summary = "Update user profile without photo")
@@ -153,5 +149,12 @@ public class ApiGeneralController {
         } else {
             return ResponseEntity.badRequest().body(response);
         }
+    }
+
+    private boolean shouldReturnAllStatistic(UserDetails userDetails, Boolean statisticIsPublic) {
+        if (userDetails == null || userService.getUserByEmail(userDetails.getUsername()).getIsModerator() != 1) {
+            return Boolean.FALSE.equals(statisticIsPublic);
+        }
+        return true;
     }
 }

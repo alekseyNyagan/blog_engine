@@ -5,7 +5,6 @@ import main.dto.CalendarDTO;
 import main.dto.PostDetailsFlatDto;
 import main.dto.PostFlatDto;
 import main.model.Post;
-import main.model.User;
 import main.model.enums.ModerationStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
