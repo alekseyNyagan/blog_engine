@@ -1,5 +1,6 @@
 package main.converter.mvc;
 
+import org.jspecify.annotations.NonNull;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,7 @@ public class StringToEnumConverterFactory implements ConverterFactory<String, En
         }
 
     @Override
-    public <T extends Enum> Converter<String, T> getConverter(Class<T> targetType) {
+    public <T extends Enum> @NonNull Converter<String, T> getConverter(@NonNull Class<T> targetType) {
         return new StringToEnumConverter(targetType);
     }
 }

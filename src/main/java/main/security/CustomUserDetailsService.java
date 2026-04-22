@@ -1,6 +1,7 @@
 package main.security;
 
 import main.repository.UsersRepository;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -19,7 +20,7 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+    public @NonNull UserDetails loadUserByUsername(@NonNull String email) throws UsernameNotFoundException {
         return usersRepository.findUserByEmail(email)
                 .map(user -> new CustomUserDetails(
                         user.getId(),
