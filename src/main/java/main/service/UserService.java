@@ -2,6 +2,7 @@ package main.service;
 
 import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import main.api.request.PasswordRequest;
 import main.api.request.RegistrationRequest;
 import main.api.request.RestoreRequest;
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public class UserService {
 
     private static final int HASH_LENGTH = 40;
@@ -53,13 +55,16 @@ public class UserService {
 
     @Transactional
     public ErrorsResponse addUser(RegistrationRequest registrationRequest) {
+        log.info("Registering new user with email: {}", registrationRequest.getEmail());
         Map<String, String> errors = userValidator.validateRegistration(registrationRequest);
         if (!errors.isEmpty()) {
+            log.warn("Failed to register user {}: {}", registrationRequest.getEmail(), errors);
             return new ErrorsResponse(false, errors);
         }
 
         User user = mapper.fromRegistrationRequestToUser(registrationRequest);
         usersRepository.save(user);
+        log.info("User {} registered successfully", registrationRequest.getEmail());
         return new ErrorsResponse(true);
     }
 
@@ -70,6 +75,7 @@ public class UserService {
 
     @Transactional
     public ErrorsResponse updateProfile(UpdateProfileRequest request, MultipartFile photo, String email) throws IOException {
+        log.info("Updating profile for user {}", email);
         User user = getUserByEmail(email);
 
         if (photo != null) {
@@ -83,11 +89,13 @@ public class UserService {
 
         updateBasicUserInfo(request, user);
         usersRepository.save(user);
+        log.info("Profile for user {} updated successfully", email);
         return new ErrorsResponse(true);
     }
 
     @Transactional
     public ResultResponse restore(RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException {
+        log.info("Restoring password for user {}", restoreRequest.getEmail());
         Optional<User> userOptional = usersRepository.findUserByEmail(restoreRequest.getEmail());
 
         if (userOptional.isPresent()) {
@@ -96,22 +104,27 @@ public class UserService {
             user.setCode(hash);
             usersRepository.save(user);
             mailService.sendRestoreEmail(user.getEmail(), httpServletRequest.getServerName(), hash);
+            log.info("Password restoration email sent to {}", restoreRequest.getEmail());
             return new ResultResponse(true);
         }
-
+        log.warn("Failed to restore password for user {}: user not found", restoreRequest.getEmail());
         return new ResultResponse(false);
     }
 
     @Transactional
     public ErrorsResponse password(PasswordRequest passwordRequest) {
+        log.info("Attempting to change password with a restore token");
         Map<String, String> errors = userValidator.validatePasswordChange(passwordRequest);
         if (!errors.isEmpty()) {
+            log.warn("Password change failed due to validation errors: {}", errors);
             return new ErrorsResponse(false, errors);
         }
 
         User user = usersRepository.findUserByCode(passwordRequest.getCode()).get();
+        log.info("Found user {} for password change", user.getEmail());
         user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
         usersRepository.save(user);
+        log.info("Password for user {} changed successfully", user.getEmail());
         return new ErrorsResponse(true);
     }
 

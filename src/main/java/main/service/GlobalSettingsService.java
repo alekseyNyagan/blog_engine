@@ -1,5 +1,6 @@
 package main.service;
 
+import lombok.extern.slf4j.Slf4j;
 import main.api.request.GlobalSettingsUpdateRequest;
 import main.model.GlobalSetting;
 import main.model.enums.GlobalSettingCode;
@@ -13,6 +14,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class GlobalSettingsService {
     private final GlobalSettingsRepository globalSettingsRepository;
 
@@ -22,12 +24,13 @@ public class GlobalSettingsService {
     }
 
     public Map<String, Boolean> getGlobalSettings() {
-       return globalSettingsRepository.findAll().stream()
+        return globalSettingsRepository.findAll().stream()
                 .collect(Collectors.toMap(setting -> setting.getCode().name(), GlobalSetting::getValue));
     }
 
     @Transactional
     public void updateGlobalSettings(GlobalSettingsUpdateRequest request) {
+        log.info("Updating global settings");
         Map<GlobalSettingCode, GlobalSetting> settingsMap = globalSettingsRepository.findAll().stream()
                 .collect(Collectors.toMap(GlobalSetting::getCode, Function.identity()));
 
@@ -38,5 +41,6 @@ public class GlobalSettingsService {
         });
 
         globalSettingsRepository.saveAll(settingsMap.values());
+        log.info("Global settings updated successfully");
     }
 }

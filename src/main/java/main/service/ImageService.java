@@ -1,6 +1,7 @@
 package main.service;
 
 import com.github.cage.Cage;
+import lombok.extern.slf4j.Slf4j;
 import main.api.response.ErrorsResponse;
 import main.utils.ImageUtil;
 import main.utils.RandomUtil;
@@ -20,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class ImageService {
 
     private static final int MAX_FILE_SIZE = 5_242_880;
@@ -35,6 +37,7 @@ public class ImageService {
     private static final String ENCODED_STRING_PREFIX = "data:image/png;base64,";
 
     public Object uploadImage(MultipartFile file) throws IOException {
+        log.info("Uploading image: {}", file.getOriginalFilename());
         String extension = FilenameUtils.getExtension(file.getOriginalFilename());
 
         if (extension != null && isImageSizeValid(file) &&
@@ -45,14 +48,17 @@ public class ImageService {
 
             try (FileOutputStream outputStream = new FileOutputStream(fullPath)) {
                 outputStream.write(file.getBytes());
+                log.info("Image {} uploaded successfully to {}", file.getOriginalFilename(), fullPath);
                 return relativePath;
             }
         } else {
+            log.warn("Failed to upload image {}: invalid format or size", file.getOriginalFilename());
             return getErrorsResponse(file);
         }
     }
 
     public String processAndEncodeImage(MultipartFile file) throws IOException {
+        log.info("Processing and encoding image: {}", file.getOriginalFilename());
         BufferedImage image = ImageIO.read(new ByteArrayInputStream(file.getBytes()));
         BufferedImage resizedImage = ImageUtil.resizeImage(image, 36, 36);
         return convertToBase64PngDataUrl(resizedImage);

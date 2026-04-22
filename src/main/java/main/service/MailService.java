@@ -3,6 +3,7 @@ package main.service;
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.text.MessageFormat;
 
 @Service
+@Slf4j
 public class MailService {
     private static final String RESTORE_PASSWORD_TEXT_CHARSET = "UTF-8";
     private static final String RESTORE_PASSWORD_TEXT_SUBTYPE = "html";
@@ -26,6 +28,7 @@ public class MailService {
     }
 
     public void sendRestoreEmail(String email, String domainName, String hash) throws MessagingException {
+        log.info("Sending password recovery email to {}", email);
         MimeMessage message = javaMailSender.createMimeMessage();
         message.addRecipients(Message.RecipientType.TO, email);
         message.setText(
@@ -33,5 +36,6 @@ public class MailService {
                 RESTORE_PASSWORD_TEXT_CHARSET,
                 RESTORE_PASSWORD_TEXT_SUBTYPE);
         javaMailSender.send(message);
+        log.info("Password recovery email sent successfully to {}", email);
     }
 }

@@ -1,5 +1,6 @@
 package main.service;
 
+import lombok.extern.slf4j.Slf4j;
 import main.api.request.ModerationRequest;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
@@ -30,6 +31,7 @@ import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class PostService {
 
 
@@ -91,12 +93,14 @@ public class PostService {
 
     @Transactional
     public ResultResponse addPost(PostRequest postRequest, int userId) {
+        log.info("User {} is adding a new post", userId);
         savePost(postRequest, userId, null);
         return new ResultResponse(true);
     }
 
     @Transactional
     public ResultResponse updatePost(int id, PostRequest postRequest, int userId) {
+        log.info("User {} is updating post {}", userId, id);
         savePost(postRequest, userId, id);
         return new ResultResponse(true);
     }
@@ -119,6 +123,7 @@ public class PostService {
         PostVote postVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
         post.addVote(postVote);
         postsRepository.save(post);
+        log.info("User {} voted for post {}", userId, post.getId());
         return new ResultResponse(true);
     }
 
@@ -134,6 +139,7 @@ public class PostService {
 
         post.setModeratorId(moderatorId);
         postsRepository.save(post);
+        log.info("Moderator {} moderated post {} with decision: {}", moderatorId, post.getId(), moderationRequest.getDecision());
         return new ResultResponse(true);
     }
 

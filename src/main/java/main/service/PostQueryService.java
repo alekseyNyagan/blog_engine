@@ -1,5 +1,6 @@
 package main.service;
 
+import lombok.extern.slf4j.Slf4j;
 import main.api.response.PostsResponse;
 import main.dto.PostDto;
 import main.dto.PostFlatDto;
@@ -23,6 +24,7 @@ import java.util.EnumMap;
 import java.util.List;
 
 @Service
+@Slf4j
 public class PostQueryService {
 
     private static final EnumMap<FilterMode, FilterStrategy> filterStrategyMap = new EnumMap<>(FilterMode.class);
@@ -49,17 +51,20 @@ public class PostQueryService {
 
     @Transactional
     public PostsResponse getPosts(int offset, int limit, FilterMode mode) {
+        log.info("Fetching posts with mode: {}", mode);
         Page<PostFlatDto> posts = filterStrategyMap.get(mode).execute(getPageNumber(offset), limit);
         return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
     public PostsResponse getPostsByQuery(int offset, int limit, String query) {
+        log.info("Fetching posts with query: {}", query);
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
         Page<PostFlatDto> posts = postsRepository.findPostsByTextLike(query, page);
         return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
     public PostsResponse getPostsByDate(int offset, int limit, String date) {
+        log.info("Fetching posts by date: {}", date);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
         LocalDate parsedDate = LocalDate.parse(date, formatter);
         ZoneId zoneId = ZoneId.systemDefault();
@@ -74,18 +79,21 @@ public class PostQueryService {
     }
 
     public PostsResponse getPostsByTag(int offset, int limit, String tag) {
+        log.info("Fetching posts by tag: {}", tag);
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
         Page<PostFlatDto> posts = postsRepository.findPostsByTag(tag, page);
         return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
     public PostsResponse getModerationPosts(int offset, int limit, ModerationStatus status) {
+        log.info("Fetching posts for moderation with status: {}", status);
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
         Page<PostFlatDto> posts = postsRepository.findPostsByModerationStatus(status, page);
         return new PostsResponse(posts.getTotalElements(), getPostDtosFromPosts(posts.getContent()));
     }
 
     public PostsResponse getMyPosts(int offset, int limit, String status, String email) {
+        log.info("Fetching posts for user {} with status: {}", email, status);
         Page<PostFlatDto> posts = Page.empty();
         Pageable page = PageRequest.of(getPageNumber(offset), limit);
         switch (status) {

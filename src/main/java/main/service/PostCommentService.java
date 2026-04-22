@@ -1,5 +1,6 @@
 package main.service;
 
+import lombok.extern.slf4j.Slf4j;
 import main.api.request.CommentRequest;
 import main.api.response.CommentResponse;
 import main.model.Post;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.NoSuchElementException;
 
 @Service
+@Slf4j
 public class PostCommentService {
 
     private static final String POST_NOT_FOUND_ERROR_MESSAGE = "Публикация не найдена";
@@ -31,10 +33,11 @@ public class PostCommentService {
 
     @Transactional
     public CommentResponse addComment(CommentRequest commentRequest, int userId) {
+        log.info("User {} is adding a comment to post {}", userId, commentRequest.getPostId());
         CommentResponse commentResponse = new CommentResponse();
         Post post = postsRepository.findById(commentRequest.getPostId())
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
-        
+
         main.model.User currentUser = usersRepository.getReferenceById(userId);
 
         PostComment postComment = new PostComment();
@@ -47,6 +50,7 @@ public class PostCommentService {
         postComment.setPost(post);
         postCommentsRepository.save(postComment);
         commentResponse.setId(postComment.getId());
+        log.info("Comment {} added successfully to post {}", postComment.getId(), commentRequest.getPostId());
         return commentResponse;
     }
 }
