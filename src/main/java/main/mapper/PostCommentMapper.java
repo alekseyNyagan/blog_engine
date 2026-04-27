@@ -2,16 +2,15 @@ package main.mapper;
 
 import main.dto.PostCommentDto;
 import main.dto.PostCommentFlatDto;
-import main.model.PostComment;
-import org.mapstruct.DecoratedWith;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.ReportingPolicy;
 
-@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING)
-@DecoratedWith(PostCommentMapperDelegate.class)
+@Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING, uses = {InstantMapper.class, UserMapper.class})
 public interface PostCommentMapper {
-    PostComment toEntity(PostCommentDto postCommentDto);
 
+    @Mapping(source = "postComment", target = "user")
+    @Mapping(source = "time", target = "timestamp")
     PostCommentDto toPostCommentDto(PostCommentFlatDto postComment);
 }

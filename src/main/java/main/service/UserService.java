@@ -63,6 +63,7 @@ public class UserService {
         }
 
         User user = mapper.fromRegistrationRequestToUser(registrationRequest);
+        user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
         usersRepository.save(user);
         log.info("User {} registered successfully", registrationRequest.getEmail());
         return new ErrorsResponse(true);

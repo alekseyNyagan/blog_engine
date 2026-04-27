@@ -47,6 +47,8 @@ class PostServiceTest {
     private TagsRepository tagsRepository;
     @Mock
     private ImageService imageService;
+    @Mock
+    private GlobalSettingsService globalSettingsService;
 
     @InjectMocks
     private PostService postService;
@@ -123,10 +125,11 @@ class PostServiceTest {
     void addPost_ShouldReturnSuccessResponse() {
         int userId = 1;
         PostRequest request = new PostRequest();
+        request.setTags(List.of("tag1", "tag2"));
         User user = mock(User.class);
 
         when(usersRepository.getReferenceById(userId)).thenReturn(user);
-        when(postMapper.fromPostRequestToPost(request, user)).thenReturn(mock(Post.class));
+        when(postMapper.fromPostRequestToPost(request)).thenReturn(mock(Post.class));
 
         ResultResponse response = postService.addPost(request, userId);
 
@@ -176,11 +179,12 @@ class PostServiceTest {
         int userId = 1;
         int postId = 123;
         PostRequest request = new PostRequest();
+        request.setTags(List.of("tag1", "tag2"));
         User user = mock(User.class);
         Post post = mock(Post.class);
 
         when(usersRepository.getReferenceById(userId)).thenReturn(user);
-        when(postMapper.fromPostRequestToPost(postId, request, user)).thenReturn(post);
+        when(postMapper.fromPostRequestToPost(request)).thenReturn(post);
 
         ResultResponse result = postService.updatePost(postId, request, userId);
 

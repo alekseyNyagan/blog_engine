@@ -12,6 +12,7 @@ import main.dto.PostDetailsFlatDto;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
+import main.model.Tag;
 import main.model.User;
 import main.model.enums.ModerationStatus;
 import main.repository.PostCommentsRepository;
@@ -27,6 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -37,6 +40,7 @@ public class PostService {
 
     private static final String POST_NOT_FOUND_ERROR_MESSAGE = "Пост не найден";
     private static final String ACCEPT_DECISION = "accept";
+    private static final String POST_PREMODERATION_SETTING = "POST_PREMODERATION";
     private final UsersRepository usersRepository;
     private final PostsRepository postsRepository;
     private final PostMapper postMapper;
@@ -44,15 +48,19 @@ public class PostService {
     private final ImageService imageService;
     private final TagsRepository tagsRepository;
 
+    private final GlobalSettingsService globalSettingsService;
+
     @Autowired
     public PostService(PostsRepository postsRepository, PostMapper postMapper, UsersRepository usersRepository,
-                       PostCommentsRepository postCommentsRepository, TagsRepository tagsRepository, ImageService imageService) {
+                       PostCommentsRepository postCommentsRepository, TagsRepository tagsRepository, ImageService imageService,
+                       GlobalSettingsService globalSettingsService) {
         this.postsRepository = postsRepository;
         this.postMapper = postMapper;
         this.usersRepository = usersRepository;
         this.postCommentsRepository = postCommentsRepository;
         this.tagsRepository = tagsRepository;
         this.imageService = imageService;
+        this.globalSettingsService = globalSettingsService;
     }
 
     @Transactional(readOnly = true)
@@ -94,26 +102,40 @@ public class PostService {
     @Transactional
     public ResultResponse addPost(PostRequest postRequest, int userId) {
         log.info("User {} is adding a new post", userId);
-        savePost(postRequest, userId, null);
+        Post post = createPost(postRequest, userId);
+        postsRepository.save(post);
         return new ResultResponse(true);
     }
 
     @Transactional
     public ResultResponse updatePost(int id, PostRequest postRequest, int userId) {
         log.info("User {} is updating post {}", userId, id);
-        savePost(postRequest, userId, id);
+        Post post = createPost(postRequest, userId, id);
+        postsRepository.save(post);
         return new ResultResponse(true);
     }
 
-    private void savePost(PostRequest postRequest, int userId, Integer postId) {
+    private Post createPost(PostRequest postRequest, int userId) {
         User user = usersRepository.getReferenceById(userId);
-        Post post;
-        if (postId == null) {
-            post = postMapper.fromPostRequestToPost(postRequest, user);
-        } else {
-            post = postMapper.fromPostRequestToPost(postId, postRequest, user);
+        Post post = postMapper.fromPostRequestToPost(postRequest);
+
+        List<Tag> tags = new ArrayList<>();
+        postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
+
+        if (Boolean.TRUE.equals(globalSettingsService.getGlobalSettings().get(POST_PREMODERATION_SETTING)) && user.getIsModerator() != 1) {
+            post.setModerationStatus(ModerationStatus.NEW);
         }
-        postsRepository.save(post);
+
+        post.setTags(tags);
+        post.setUser(user);
+
+        return post;
+    }
+
+    private Post createPost(PostRequest postRequest, int userId, Integer postId) {
+        Post post = createPost(postRequest, userId);
+        post.setId(postId);
+        return post;
     }
 
     @Transactional

@@ -4,7 +4,10 @@ import lombok.extern.slf4j.Slf4j;
 import main.api.request.LoginRequest;
 import main.api.response.LoginResponse;
 import main.api.response.ResultResponse;
+import main.dto.UserDto;
 import main.mapper.UserMapper;
+import main.model.enums.ModerationStatus;
+import main.repository.PostsRepository;
 import main.repository.UsersRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,10 +24,14 @@ public class AuthService {
     private final UsersRepository usersRepository;
     private final UserMapper mapper;
 
-    public AuthService(AuthenticationManager authenticationManager, UsersRepository usersRepository, UserMapper mapper) {
+    private final PostsRepository postsRepository;
+
+    public AuthService(AuthenticationManager authenticationManager, UsersRepository usersRepository, UserMapper mapper,
+                       PostsRepository postsRepository) {
         this.authenticationManager = authenticationManager;
         this.usersRepository = usersRepository;
         this.mapper = mapper;
+        this.postsRepository = postsRepository;
     }
 
     public LoginResponse login(LoginRequest loginRequest) {
@@ -54,6 +61,13 @@ public class AuthService {
         main.model.User authenticatedUser = usersRepository
                 .findUserByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException(email));
-        return new LoginResponse(true, mapper.toUserDto(authenticatedUser));
+
+        boolean isModerator = authenticatedUser.getIsModerator() == 1;
+
+        UserDto userDto = mapper.toUserDto(authenticatedUser);
+        userDto.setModerator(isModerator);
+        userDto.setSettings(isModerator);
+        userDto.setModerationCount(isModerator ? postsRepository.countPostsByModerationStatus(ModerationStatus.NEW) : 0);
+        return new LoginResponse(true, userDto);
     }
 }
