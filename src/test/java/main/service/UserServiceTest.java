@@ -3,9 +3,11 @@ package main.service;
 import main.api.request.RegistrationRequest;
 import main.api.request.UpdateProfileRequest;
 import main.api.response.ErrorsResponse;
+import main.exception.ValidationException;
 import main.mapper.UserMapper;
 import main.model.User;
 import main.repository.UsersRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +19,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
@@ -42,29 +43,36 @@ public class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
+    private RegistrationRequest registrationRequest;
+
+    @BeforeEach
+    void setUp() {
+        registrationRequest = new RegistrationRequest();
+    }
+
     @Test
-    @DisplayName("Should add user successfully")
+    @DisplayName("Should add user successfully when validation passes")
     void testAddUser_Success() {
-        RegistrationRequest registrationRequest = new RegistrationRequest();
-        when(userValidator.validateRegistration(registrationRequest)).thenReturn(Collections.emptyMap());
+        doNothing().when(userValidator).validateRegistration(registrationRequest);
         when(mapper.fromRegistrationRequestToUser(registrationRequest)).thenReturn(new User());
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 
         assertTrue(errorsResponse.isResult());
+        assertNull(errorsResponse.getErrors());
         verify(usersRepository, times(1)).save(any(User.class));
     }
 
     @Test
-    @DisplayName("Should not add user when validation fails")
+    @DisplayName("Should not add user and return errors when validation fails")
     void testAddUser_ValidationFails() {
-        RegistrationRequest registrationRequest = new RegistrationRequest();
-        when(userValidator.validateRegistration(registrationRequest)).thenReturn(Map.of("email", "Email already exists"));
+        Map<String, String> validationErrors = Map.of("email", "Email already exists");
+        doThrow(new ValidationException(validationErrors)).when(userValidator).validateRegistration(registrationRequest);
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 
         assertFalse(errorsResponse.isResult());
-        assertTrue(errorsResponse.getErrors().containsKey("email"));
+        assertEquals(validationErrors, errorsResponse.getErrors());
         verify(usersRepository, never()).save(any(User.class));
     }
 

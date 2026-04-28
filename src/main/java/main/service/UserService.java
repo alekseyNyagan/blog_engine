@@ -9,6 +9,7 @@ import main.api.request.RestoreRequest;
 import main.api.request.UpdateProfileRequest;
 import main.api.response.ErrorsResponse;
 import main.api.response.ResultResponse;
+import main.exception.ValidationException;
 import main.mapper.UserMapper;
 import main.model.User;
 import main.repository.UsersRepository;
@@ -56,17 +57,17 @@ public class UserService {
     @Transactional
     public ErrorsResponse addUser(RegistrationRequest registrationRequest) {
         log.info("Registering new user with email: {}", registrationRequest.getEmail());
-        Map<String, String> errors = userValidator.validateRegistration(registrationRequest);
-        if (!errors.isEmpty()) {
-            log.warn("Failed to register user {}: {}", registrationRequest.getEmail(), errors);
-            return new ErrorsResponse(false, errors);
+        try {
+            userValidator.validateRegistration(registrationRequest);
+            User user = mapper.fromRegistrationRequestToUser(registrationRequest);
+            user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
+            usersRepository.save(user);
+            log.info("User {} registered successfully", registrationRequest.getEmail());
+            return new ErrorsResponse(true);
+        } catch (ValidationException exception) {
+            log.warn("Failed to register user {}: {}", registrationRequest.getEmail(), exception.getErrors());
+            return new ErrorsResponse(false, exception.getErrors());
         }
-
-        User user = mapper.fromRegistrationRequestToUser(registrationRequest);
-        user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
-        usersRepository.save(user);
-        log.info("User {} registered successfully", registrationRequest.getEmail());
-        return new ErrorsResponse(true);
     }
 
     public User getUserByEmail(String email) {
@@ -115,18 +116,15 @@ public class UserService {
     @Transactional
     public ErrorsResponse password(PasswordRequest passwordRequest) {
         log.info("Attempting to change password with a restore token");
-        Map<String, String> errors = userValidator.validatePasswordChange(passwordRequest);
-        if (!errors.isEmpty()) {
-            log.warn("Password change failed due to validation errors: {}", errors);
-            return new ErrorsResponse(false, errors);
+        try {
+            User user = userValidator.validatePasswordChange(passwordRequest);
+            user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
+            usersRepository.save(user);
+            return new ErrorsResponse(true);
+        } catch (ValidationException exception) {
+            log.warn("Password change failed due to validation errors: {}", exception.getErrors());
+            return new ErrorsResponse(false, exception.getErrors());
         }
-
-        User user = usersRepository.findUserByCode(passwordRequest.getCode()).get();
-        log.info("Found user {} for password change", user.getEmail());
-        user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
-        usersRepository.save(user);
-        log.info("Password for user {} changed successfully", user.getEmail());
-        return new ErrorsResponse(true);
     }
 
     private void updateBasicUserInfo(UpdateProfileRequest updateProfileRequest, User user) {
