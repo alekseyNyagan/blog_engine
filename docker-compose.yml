@@ -23,7 +23,7 @@ services:
       - DATA_REDIS_PASSWORD=password
 
   db:
-    image: mysql:9.5.0
+    image: mysql:9.7.0
     container_name: db
     environment:
       - MYSQL_ROOT_PASSWORD=testtest
