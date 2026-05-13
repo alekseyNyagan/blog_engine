@@ -1,0 +1,19 @@
+spring:
+  flyway:
+    enabled: false
+  sql:
+    init:
+      mode: never
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    properties:
+      hibernate:
+        boot:
+          allow_jdbc_metadata_access: false
+    hibernate:
+      ddl-auto: none
+  data:
+    redis:
+      lettuce:
+        pool:
+          enabled: false
