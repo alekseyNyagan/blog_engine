@@ -30,10 +30,18 @@ spring:
   session:
     store-type: redis
 
-blog.title: DevPub
-blog.subtitle: Рассказы разработчиков
-blog.phone: +7 903 666-44-55
-blog.email: alexei.muraschkin@mail.ru
-blog.copyright: Мурашкин Алексей
-blog.copyrightfrom: 2021
+app:
+  upload:
+    max-size: 5242880
+    folder-path: ./upload/ab/cd/ef/
+    relative-prefix: /upload/ab/cd/ef/
+
+blog:
+  title: DevPub
+  subtitle: Рассказы разработчиков
+  phone: +7 903 666-44-55
+  email: alexei.muraschkin@mail.ru
+  copyright: Мурашкин Алексей
+  copyrightfrom: 2021
+
 time.expire.captcha: 1

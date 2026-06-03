@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -37,24 +36,21 @@ public class CaptchaCodeService {
     @Transactional
     public CaptchaCodeResponse getCaptcha() {
         CaptchaCodeResponse captchaCodeResponse = new CaptchaCodeResponse();
-        try {
-            String code = cage.getTokenGenerator().next().substring(CODE_START_INDEX, CODE_END_INDEX);
-            String secretCode = cage.getTokenGenerator().next();
 
-            CaptchaCode captchaCode = new CaptchaCode();
-            captchaCode.setCode(code);
-            captchaCode.setSecretCode(secretCode);
+        String code = cage.getTokenGenerator().next().substring(CODE_START_INDEX, CODE_END_INDEX);
+        String secretCode = cage.getTokenGenerator().next();
 
-            captchaCodeRepository.save(captchaCode);
+        CaptchaCode captchaCode = new CaptchaCode();
+        captchaCode.setCode(code);
+        captchaCode.setSecretCode(secretCode);
 
-            captchaCodeResponse.setImage(imageService.drawCaptchaImage(cage, code));
-            captchaCodeResponse.setSecret(secretCode);
+        captchaCodeRepository.save(captchaCode);
 
-            Instant threshold = Instant.now().minus(1L, ChronoUnit.HOURS);
-            captchaCodeRepository.deleteAllByTimeLessThan(threshold);
-        } catch (IOException exception) {
-            log.error("Ошибка генерации изображения капчи", exception);
-        }
+        captchaCodeResponse.setImage(imageService.drawCaptchaImage(cage, code));
+        captchaCodeResponse.setSecret(secretCode);
+
+        Instant threshold = Instant.now().minus(1L, ChronoUnit.HOURS);
+        captchaCodeRepository.deleteAllByTimeLessThan(threshold);
         return captchaCodeResponse;
     }
 

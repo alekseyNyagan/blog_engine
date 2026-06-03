@@ -1,6 +1,7 @@
 package main.controller;
 
 import main.api.response.ErrorsResponse;
+import main.exception.FileUploadException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -45,5 +46,10 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(value = {NoSuchElementException.class, UsernameNotFoundException.class})
     public ResponseEntity<Object> handleResourceNotFound(RuntimeException ex, WebRequest request) {
         return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.NOT_FOUND, request);
+    }
+
+    @ExceptionHandler(value = FileUploadException.class)
+    public ResponseEntity<Object> handleFileExists(RuntimeException ex, WebRequest request) {
+        return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
     }
 }
