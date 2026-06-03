@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Map;
 import java.util.Optional;
@@ -76,12 +75,12 @@ public class UserService {
     }
 
     @Transactional
-    public ErrorsResponse updateProfile(UpdateProfileRequest request, MultipartFile photo, String email) throws IOException {
+    public ErrorsResponse updateProfile(UpdateProfileRequest request, MultipartFile photo, String email) {
         log.info("Updating profile for user {}", email);
         User user = getUserByEmail(email);
 
         if (photo != null) {
-            if (imageService.isImageSizeValid(photo)) {
+            if (!imageService.isImageSizeValid(photo)) {
                 return new ErrorsResponse(false, Map.of(PHOTO_SIZE_ERROR_KEY, PHOTO_SIZE_ERROR_MESSAGE));
             }
             user.setPhoto(imageService.processAndEncodeImage(photo));
