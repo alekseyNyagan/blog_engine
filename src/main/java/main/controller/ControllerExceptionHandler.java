@@ -2,6 +2,7 @@ package main.controller;
 
 import main.api.response.ErrorsResponse;
 import main.exception.FileUploadException;
+import main.exception.ValidationException;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -51,5 +52,10 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(value = FileUploadException.class)
     public ResponseEntity<Object> handleFileExists(RuntimeException ex, WebRequest request) {
         return handleExceptionInternal(ex, ex.getMessage(), new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
+
+    @ExceptionHandler(value = ValidationException.class)
+    public ResponseEntity<ErrorsResponse> handleValidationException(ValidationException ex) {
+        return new ResponseEntity<>(new ErrorsResponse(false, ex.getErrors()), HttpStatus.OK);
     }
 }

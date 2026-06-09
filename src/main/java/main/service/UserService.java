@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.text.MessageFormat;
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -33,7 +32,7 @@ public class UserService {
     private static final int REMOVE_PHOTO_OPTION = 1;
     private static final String USER_NOT_FOUND_MESSAGE_PATTERN = "user with email {0} not found";
     private static final String PHOTO_SIZE_ERROR_MESSAGE = "Превышен допустимый размер фотографии (5MB)";
-    private static final String PHOTO_SIZE_ERROR_KEY = "photo";
+    private static final String PHOTO_ERROR_KEY = "photo";
 
     private final UsersRepository usersRepository;
     private final UserValidator userValidator;
@@ -80,9 +79,7 @@ public class UserService {
         User user = getUserByEmail(email);
 
         if (photo != null) {
-            if (!imageService.isImageSizeValid(photo)) {
-                return new ErrorsResponse(false, Map.of(PHOTO_SIZE_ERROR_KEY, PHOTO_SIZE_ERROR_MESSAGE));
-            }
+            imageService.validateImage(photo, PHOTO_ERROR_KEY, PHOTO_SIZE_ERROR_MESSAGE, null);
             user.setPhoto(imageService.processAndEncodeImage(photo));
         } else if (request.getRemovePhoto() == REMOVE_PHOTO_OPTION) {
             user.setPhoto(null);

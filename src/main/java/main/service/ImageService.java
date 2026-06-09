@@ -82,17 +82,30 @@ public class ImageService {
         return convertToBase64PngDataUrl(resizedImage);
     }
 
-    private void validateImage(MultipartFile file) {
+    public void validateImage(MultipartFile file, String errorKey, String sizeErrorMessage, String extensionErrorMessage) {
         Map<String, String> errors = new HashMap<>();
+
+        String finalKey = (errorKey != null) ? errorKey : IMAGE_ERROR_KEY;
+        String finalSizeMessage = (sizeErrorMessage != null) ? sizeErrorMessage : FILE_SIZE_ERROR_MESSAGE;
+        String finalExtensionMessage = (extensionErrorMessage != null) ? extensionErrorMessage : FILE_EXTENSION_ERROR_MESSAGE;
+
         if (!isImageSizeValid(file)) {
             log.warn("Failed to upload image: size {} exceeds max", file.getSize());
-            errors.put(IMAGE_ERROR_KEY, FILE_SIZE_ERROR_MESSAGE);
-            throw new ValidationException(errors);
-        } else if (!ALLOWED_EXTENSIONS.contains(file.getContentType())) {
+            errors.put(finalKey, finalSizeMessage);
+        }
+
+        if (!ALLOWED_EXTENSIONS.contains(file.getContentType())) {
             log.warn("Failed to upload image: type {} is not allowed", file.getContentType());
-            errors.put(IMAGE_ERROR_KEY, FILE_EXTENSION_ERROR_MESSAGE);
+            errors.put(finalKey, finalExtensionMessage);
+        }
+
+        if (!errors.isEmpty()) {
             throw new ValidationException(errors);
         }
+    }
+
+    public void validateImage(MultipartFile file) {
+        validateImage(file, null, null, null);
     }
 
     private static @NotNull String convertToBase64PngDataUrl(BufferedImage resizedImage) {
