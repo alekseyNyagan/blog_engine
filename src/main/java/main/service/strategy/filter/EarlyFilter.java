@@ -3,6 +3,7 @@ package main.service.strategy.filter;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import main.dto.PostFlatDto;
+import main.model.Post;
 import main.repository.PostsRepository;
 import main.service.PostQueryService;
 import main.service.strategy.enums.FilterMode;
@@ -27,7 +28,7 @@ public class EarlyFilter implements FilterStrategy {
 
     @Override
     public Page<PostFlatDto> execute(int pageNumber, int limit) {
-        Sort dateSort = Sort.by(Sort.Direction.ASC, "time");
+        Sort dateSort = Sort.by(Sort.Direction.ASC, Post::getTime);
         Pageable page = PageRequest.of(pageNumber, limit, dateSort);
         return postsRepository.findPosts(page);
     }
