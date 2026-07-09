@@ -15,6 +15,7 @@ import main.model.User;
 import main.repository.UsersRepository;
 import main.utils.RandomUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -40,16 +41,18 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final ImageService imageService;
     private final MailService mailService;
+    private final UserService self;
 
     @Autowired
     public UserService(UsersRepository usersRepository, UserValidator userValidator, UserMapper mapper, ImageService imageService,
-                       PasswordEncoder passwordEncoder, MailService mailService) {
+                       PasswordEncoder passwordEncoder, MailService mailService, @Lazy UserService self) {
         this.usersRepository = usersRepository;
         this.userValidator = userValidator;
         this.mapper = mapper;
         this.passwordEncoder = passwordEncoder;
         this.mailService = mailService;
         this.imageService = imageService;
+        this.self = self;
     }
 
     @Transactional
@@ -90,34 +93,40 @@ public class UserService {
         return new ErrorsResponse(true);
     }
 
-    @Transactional
     public ResultResponse restore(RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException {
         log.info("Restoring password for user {}", restoreRequest.getEmail());
-        Optional<User> userOptional = usersRepository.findUserByEmail(restoreRequest.getEmail());
 
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
-            String hash = RandomUtil.generateRandomHash(HASH_LENGTH);
-            user.setCode(hash);
-            mailService.sendRestoreEmail(user.getEmail(), httpServletRequest.getServerName(), hash);
+        Optional<String> hashOptional = self.generateAndSaveRestoreCode(restoreRequest.getEmail());
+
+        if (hashOptional.isPresent()) {
+            mailService.sendRestoreEmail(restoreRequest.getEmail(), httpServletRequest.getServerName(), hashOptional.get());
             log.info("Password restoration email sent to {}", restoreRequest.getEmail());
             return new ResultResponse(true);
         }
+
         log.warn("Failed to restore password for user {}: user not found", restoreRequest.getEmail());
         return new ResultResponse(false);
     }
 
     @Transactional
+    public Optional<String> generateAndSaveRestoreCode(String email) {
+        Optional<User> userOptional = usersRepository.findUserByEmail(email);
+
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            String hash = RandomUtil.generateRandomHash(HASH_LENGTH);
+            user.setCode(hash);
+            return Optional.of(hash);
+        }
+        return Optional.empty();
+    }
+
+    @Transactional
     public ErrorsResponse password(PasswordRequest passwordRequest) {
         log.info("Attempting to change password with a restore token");
-        try {
-            User user = userValidator.validatePasswordChange(passwordRequest);
-            user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
-            return new ErrorsResponse(true);
-        } catch (ValidationException exception) {
-            log.warn("Password change failed due to validation errors: {}", exception.getErrors());
-            return new ErrorsResponse(false, exception.getErrors());
-        }
+        User user = userValidator.validatePasswordChange(passwordRequest);
+        user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
+        return new ErrorsResponse(true);
     }
 
     private void updateBasicUserInfo(UpdateProfileRequest updateProfileRequest, User user) {
