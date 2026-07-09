@@ -144,7 +144,6 @@ public class PostService {
         Post post = findPostById(postVoteRequest.getPostId());
         PostVote postVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
         post.addVote(postVote);
-        postsRepository.save(post);
         log.info("User {} voted for post {}", userId, post.getId());
         return new ResultResponse(true);
     }
@@ -160,7 +159,6 @@ public class PostService {
         }
 
         post.setModeratorId(moderatorId);
-        postsRepository.save(post);
         log.info("Moderator {} moderated post {} with decision: {}", moderatorId, post.getId(), moderationRequest.getDecision());
         return new ResultResponse(true);
     }

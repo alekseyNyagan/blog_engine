@@ -86,7 +86,6 @@ public class UserService {
         }
 
         updateBasicUserInfo(request, user);
-        usersRepository.save(user);
         log.info("Profile for user {} updated successfully", email);
         return new ErrorsResponse(true);
     }
@@ -100,7 +99,6 @@ public class UserService {
             User user = userOptional.get();
             String hash = RandomUtil.generateRandomHash(HASH_LENGTH);
             user.setCode(hash);
-            usersRepository.save(user);
             mailService.sendRestoreEmail(user.getEmail(), httpServletRequest.getServerName(), hash);
             log.info("Password restoration email sent to {}", restoreRequest.getEmail());
             return new ResultResponse(true);
@@ -115,7 +113,6 @@ public class UserService {
         try {
             User user = userValidator.validatePasswordChange(passwordRequest);
             user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
-            usersRepository.save(user);
             return new ErrorsResponse(true);
         } catch (ValidationException exception) {
             log.warn("Password change failed due to validation errors: {}", exception.getErrors());
