@@ -2,7 +2,7 @@ package main.service.strategy.filter;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import main.dto.PostFlatDto;
+import main.repository.projection.PostProjection;
 import main.repository.PostsRepository;
 import main.service.PostQueryService;
 import main.service.strategy.enums.FilterMode;
@@ -24,7 +24,7 @@ public class PopularFilter implements FilterStrategy {
     }
 
     @Override
-    public Page<PostFlatDto> execute(int pageNumber, int limit) {
+    public Page<PostProjection> execute(int pageNumber, int limit) {
         Pageable page = PageRequest.of(pageNumber, limit);
         return postsRepository.findAllByPostCommentCount(page);
     }

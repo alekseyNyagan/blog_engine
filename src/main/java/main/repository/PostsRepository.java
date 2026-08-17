@@ -2,8 +2,8 @@ package main.repository;
 
 import main.api.response.StatisticsResponse;
 import main.dto.CalendarDTO;
-import main.dto.PostDetailsFlatDto;
-import main.dto.PostFlatDto;
+import main.repository.projection.PostDetailsProjection;
+import main.repository.projection.PostProjection;
 import main.model.Post;
 import main.model.enums.ModerationStatus;
 import org.springframework.data.domain.Page;
@@ -26,7 +26,7 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
     int countPostsByModerationStatus(@Param("status") ModerationStatus moderationStatus);
 
     @Query(value = """
-            SELECT new main.dto.PostFlatDto(
+            SELECT new main.repository.projection.PostProjection(
                     p.id,
                     p.time,
                     u.id,
@@ -47,10 +47,10 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
                 ORDER BY likesCount DESC
             """)
-    Page<PostFlatDto> findAllLikedPosts(Pageable pageable);
+    Page<PostProjection> findAllLikedPosts(Pageable pageable);
 
     @Query(value = """
-            SELECT new main.dto.PostFlatDto(
+            SELECT new main.repository.projection.PostProjection(
                     p.id,
                     p.time,
                     u.id,
@@ -71,10 +71,10 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
                 ORDER BY commentCount DESC
             """)
-    Page<PostFlatDto> findAllByPostCommentCount(Pageable pageable);
+    Page<PostProjection> findAllByPostCommentCount(Pageable pageable);
 
     @Query(value = """
-            SELECT new main.dto.PostFlatDto(
+            SELECT new main.repository.projection.PostProjection(
                     p.id,
                     p.time,
                     u.id,
@@ -96,10 +96,10 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             
             """)
-    Page<PostFlatDto> findPostsByTextLike(@Param("text") String text, Pageable pageable);
+    Page<PostProjection> findPostsByTextLike(@Param("text") String text, Pageable pageable);
 
     @Query(value = """
-            SELECT new main.dto.PostFlatDto(
+            SELECT new main.repository.projection.PostProjection(
                     p.id,
                     p.time,
                     u.id,
@@ -119,12 +119,12 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                     AND p.time BETWEEN :dateFrom AND :dateTo
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<PostFlatDto> findPostsByTime(@Param("dateFrom") Instant dateFrom
+    Page<PostProjection> findPostsByTime(@Param("dateFrom") Instant dateFrom
             , @Param("dateTo") Instant dateTo
             , Pageable pageable);
 
     @Query(value = """
-            SELECT new main.dto.PostFlatDto(
+            SELECT new main.repository.projection.PostProjection(
                     p.id,
                     p.time,
                     u.id,
@@ -146,10 +146,10 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                     AND t.name = :name
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<PostFlatDto> findPostsByTag(@Param("name") String name, Pageable pageable);
+    Page<PostProjection> findPostsByTag(@Param("name") String name, Pageable pageable);
 
     @Query(value = """
-            SELECT new main.dto.PostFlatDto(
+            SELECT new main.repository.projection.PostProjection(
                     p.id,
                     p.time,
                     u.id,
@@ -168,7 +168,7 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                     AND p.moderationStatus = :status
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<PostFlatDto> findPostsByModerationStatus(@Param("status") ModerationStatus status, Pageable pageable);
+    Page<PostProjection> findPostsByModerationStatus(@Param("status") ModerationStatus status, Pageable pageable);
 
     @Query(value = """
             SELECT FUNCTION('YEAR', p.time) FROM Post p
@@ -190,7 +190,7 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
     List<CalendarDTO> countPostsByYear(@Param("year") int year);
 
     @Query("""
-            SELECT new main.dto.PostFlatDto(
+            SELECT new main.repository.projection.PostProjection(
                 p.id,
                 p.time,
                 u.id,
@@ -211,10 +211,10 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                 AND p.user.email = :email
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<PostFlatDto> findPostsByUser(String email, Pageable pageable);
+    Page<PostProjection> findPostsByUser(String email, Pageable pageable);
 
     @Query("""
-            SELECT new main.dto.PostFlatDto(
+            SELECT new main.repository.projection.PostProjection(
                 p.id,
                 p.time,
                 u.id,
@@ -236,7 +236,7 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                 AND p.moderationStatus = :moderationStatus
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<PostFlatDto> findPostsByUserAndModerationStatus(String email, ModerationStatus moderationStatus, Pageable pageable);
+    Page<PostProjection> findPostsByUserAndModerationStatus(String email, ModerationStatus moderationStatus, Pageable pageable);
 
     @NativeQuery(value = """
             WITH post_temp AS (
@@ -264,7 +264,7 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
     void updateViewCount(int viewCount, int id);
 
     @Query("""
-                SELECT new main.dto.PostFlatDto(
+                SELECT new main.repository.projection.PostProjection(
                     p.id,
                     p.time,
                     u.id,
@@ -284,10 +284,10 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                     AND p.time <= CURRENT_TIME
                 GROUP BY p.id, u.id, u.name, p.title, p.text, p.time, p.viewCount
             """)
-    Page<PostFlatDto> findPosts(Pageable pageable);
+    Page<PostProjection> findPosts(Pageable pageable);
 
     @Query("""
-            SELECT new main.dto.PostDetailsFlatDto(
+            SELECT new main.repository.projection.PostDetailsProjection(
                     p.id,
                     p.time,
                     p.isActive = 1,
@@ -305,5 +305,5 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
                 JOIN p.user u
                 WHERE p.id = :postId
             """)
-    Optional<PostDetailsFlatDto> findPostDetailsById(@Param("postId") int postId);
+    Optional<PostDetailsProjection> findPostDetailsById(@Param("postId") int postId);
 }

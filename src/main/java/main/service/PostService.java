@@ -8,7 +8,7 @@ import main.api.response.CalendarResponse;
 import main.api.response.PostDetailsResponse;
 import main.api.response.ResultResponse;
 import main.dto.CalendarDTO;
-import main.dto.PostDetailsFlatDto;
+import main.repository.projection.PostDetailsProjection;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
@@ -64,25 +64,25 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostDetailsFlatDto getPostDetails(int id) {
+    public PostDetailsProjection getPostDetails(int id) {
         return postsRepository.findPostDetailsById(id).orElseThrow(() ->
                 new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
     }
 
     @Transactional
-    public void incrementViewCount(PostDetailsFlatDto post, UserDetails userDetails) {
+    public void incrementViewCount(PostDetailsProjection post, UserDetails userDetails) {
         if (shouldIncrementViewCount(post, userDetails)) {
             postsRepository.updateViewCount(post.viewCount() + 1, post.id());
         }
     }
 
-    public PostDetailsResponse buildFullPostDetailsResponse(PostDetailsFlatDto postDetails) {
+    public PostDetailsResponse buildFullPostDetailsResponse(PostDetailsProjection postDetails) {
         return postMapper.toPostDetailsResponse(postDetails,
                 postCommentsRepository.findCommentsByPostId(postDetails.id()),
                 tagsRepository.findTagNamesByPostId(postDetails.id()));
     }
 
-    private boolean shouldIncrementViewCount(PostDetailsFlatDto post, UserDetails user) {
+    private boolean shouldIncrementViewCount(PostDetailsProjection post, UserDetails user) {
         if (user == null) {
             return true;
         }

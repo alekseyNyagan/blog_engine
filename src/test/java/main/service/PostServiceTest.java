@@ -6,7 +6,7 @@ import main.api.request.PostVoteRequest;
 import main.api.response.CalendarResponse;
 import main.api.response.ResultResponse;
 import main.dto.CalendarDTO;
-import main.dto.PostDetailsFlatDto;
+import main.repository.projection.PostDetailsProjection;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
@@ -57,13 +57,13 @@ class PostServiceTest {
     @DisplayName("getPostDetails should return flat DTO when post exists")
     void getPostDetails_ShouldReturnDto_WhenPostExists() {
         int postId = 1;
-        PostDetailsFlatDto expectedDto = mock(PostDetailsFlatDto.class);
-        when(postsRepository.findPostDetailsById(postId)).thenReturn(Optional.of(expectedDto));
+        PostDetailsProjection expectedProjection = mock(PostDetailsProjection.class);
+        when(postsRepository.findPostDetailsById(postId)).thenReturn(Optional.of(expectedProjection));
 
-        PostDetailsFlatDto actualDto = postService.getPostDetails(postId);
+        PostDetailsProjection actualProjection = postService.getPostDetails(postId);
 
-        assertNotNull(actualDto);
-        assertEquals(expectedDto, actualDto);
+        assertNotNull(actualProjection);
+        assertEquals(expectedProjection, actualProjection);
     }
 
     @Test
@@ -78,7 +78,7 @@ class PostServiceTest {
     @Test
     @DisplayName("incrementViewCount should increment when user is not authenticated")
     void incrementViewCount_ShouldIncrement_WhenUserIsNull() {
-        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        PostDetailsProjection post = new PostDetailsProjection(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
         postService.incrementViewCount(post, null);
         verify(postsRepository, times(1)).updateViewCount(6, 1);
     }
@@ -86,7 +86,7 @@ class PostServiceTest {
     @Test
     @DisplayName("incrementViewCount should not increment when user is the author")
     void incrementViewCount_ShouldNotIncrement_WhenUserIsAuthor() {
-        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        PostDetailsProjection post = new PostDetailsProjection(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
         UserDetails author = mock(UserDetails.class);
         when(author.getUsername()).thenReturn("author@example.com");
 
@@ -98,7 +98,7 @@ class PostServiceTest {
     @Test
     @DisplayName("incrementViewCount should not increment when user is a moderator")
     void incrementViewCount_ShouldNotIncrement_WhenUserIsModerator() {
-        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        PostDetailsProjection post = new PostDetailsProjection(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
         UserDetails moderator = mock(UserDetails.class);
         doReturn(List.of(new SimpleGrantedAuthority("user:moderate"))).when(moderator).getAuthorities();
 
@@ -110,7 +110,7 @@ class PostServiceTest {
     @Test
     @DisplayName("incrementViewCount should increment for regular user who is not the author")
     void incrementViewCount_ShouldIncrement_ForOtherUser() {
-        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        PostDetailsProjection post = new PostDetailsProjection(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
         UserDetails otherUser = mock(UserDetails.class);
         when(otherUser.getUsername()).thenReturn("other@example.com");
         doReturn(List.of(new SimpleGrantedAuthority("user:write"))).when(otherUser).getAuthorities();

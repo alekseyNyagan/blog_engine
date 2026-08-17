@@ -9,7 +9,7 @@ import main.api.request.PostVoteRequest;
 import main.api.response.PostDetailsResponse;
 import main.api.response.PostsResponse;
 import main.api.response.ResultResponse;
-import main.dto.PostDetailsFlatDto;
+import main.repository.projection.PostDetailsProjection;
 import main.model.enums.ModerationStatus;
 import main.security.CustomUserDetails;
 import main.service.PostQueryService;
@@ -77,7 +77,7 @@ public class ApiPostController {
     @GetMapping("/{id}")
     public ResponseEntity<PostDetailsResponse> getPostById(@PathVariable @Parameter(description = "Post id") int id,
                                                            @AuthenticationPrincipal UserDetails userDetails) {
-        PostDetailsFlatDto postDetails = postService.getPostDetails(id);
+        PostDetailsProjection postDetails = postService.getPostDetails(id);
         postService.incrementViewCount(postDetails, userDetails);
         PostDetailsResponse responseDto = postService.buildFullPostDetailsResponse(postDetails);
         return ResponseEntity.status(HttpStatus.OK).body(responseDto);

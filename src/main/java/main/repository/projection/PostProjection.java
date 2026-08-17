@@ -1,4 +1,4 @@
-package main.dto;
+package main.repository.projection;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import java.time.Instant;
 @Getter
 @AllArgsConstructor
 @NoArgsConstructor
-public class PostFlatDto {
+public class PostProjection {
     Integer id;
     Instant timestamp;
     Integer userId;

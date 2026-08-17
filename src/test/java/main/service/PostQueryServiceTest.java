@@ -2,7 +2,7 @@ package main.service;
 
 import main.api.response.PostResponse;
 import main.api.response.PostsResponse;
-import main.dto.PostFlatDto;
+import main.repository.projection.PostProjection;
 import main.mapper.PostMapper;
 import main.model.enums.ModerationStatus;
 import main.repository.PostsRepository;
@@ -39,7 +39,7 @@ class PostQueryServiceTest {
     private FilterStrategy filterStrategy;
 
     @Mock
-    private PostFlatDto postFlatDto;
+    private PostProjection postProjection;
 
     @Mock
     private PostResponse postResponse;
@@ -47,19 +47,19 @@ class PostQueryServiceTest {
     @InjectMocks
     private PostQueryService postQueryService;
 
-    private List<PostFlatDto> flatDtos;
+    private List<PostProjection> flatDtos;
 
     @BeforeEach
     void setUp() {
         PostQueryService.addFilterStrategy(FilterMode.BEST, filterStrategy);
-        flatDtos = List.of(postFlatDto);
+        flatDtos = List.of(postProjection);
     }
 
     @Test
     void getPosts_ShouldReturnFilteredPosts() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(filterStrategy.execute(0, 10)).thenReturn(page);
-        when(postMapper.toPostResponse(postFlatDto)).thenReturn(postResponse);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getPosts(0, 10, FilterMode.BEST);
 
@@ -69,9 +69,9 @@ class PostQueryServiceTest {
 
     @Test
     void getPostsByQuery_ShouldReturnMatchingPosts() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByTextLike("test", PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostResponse(postFlatDto)).thenReturn(postResponse);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getPostsByQuery(0, 10, "test");
 
@@ -81,14 +81,14 @@ class PostQueryServiceTest {
 
     @Test
     void getPostsByDate_ShouldReturnMatchingPosts() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         String date = "2024-06-06";
         LocalDate localDate = LocalDate.parse(date);
         Instant from = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant to = localDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
 
         when(postsRepository.findPostsByTime(from, to, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostResponse(postFlatDto)).thenReturn(postResponse);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getPostsByDate(0, 10, date);
 
@@ -98,9 +98,9 @@ class PostQueryServiceTest {
 
     @Test
     void getPostsByTag_ShouldReturnTaggedPosts() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByTag("spring", PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostResponse(postFlatDto)).thenReturn(postResponse);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getPostsByTag(0, 10, "spring");
 
@@ -110,9 +110,9 @@ class PostQueryServiceTest {
 
     @Test
     void getModerationPosts_ShouldReturnPostsWithStatus() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByModerationStatus(ModerationStatus.NEW, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostResponse(postFlatDto)).thenReturn(postResponse);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getModerationPosts(0, 10, ModerationStatus.NEW);
 
@@ -122,9 +122,9 @@ class PostQueryServiceTest {
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusInactive() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUser("test@example.com", PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostResponse(postFlatDto)).thenReturn(postResponse);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "inactive", "test@example.com");
 
@@ -134,9 +134,9 @@ class PostQueryServiceTest {
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusPending() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUserAndModerationStatus("test@example.com", ModerationStatus.NEW, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostResponse(postFlatDto)).thenReturn(postResponse);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "pending", "test@example.com");
 
@@ -146,9 +146,9 @@ class PostQueryServiceTest {
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusDeclined() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUserAndModerationStatus("test@example.com", ModerationStatus.DECLINED, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostResponse(postFlatDto)).thenReturn(postResponse);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "declined", "test@example.com");
 
@@ -158,9 +158,9 @@ class PostQueryServiceTest {
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusPublished() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUserAndModerationStatus("test@example.com", ModerationStatus.ACCEPTED, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostResponse(postFlatDto)).thenReturn(postResponse);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "published", "test@example.com");
 

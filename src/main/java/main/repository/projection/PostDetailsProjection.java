@@ -1,8 +1,8 @@
-package main.dto;
+package main.repository.projection;
 
 import java.time.Instant;
 
-public record PostDetailsFlatDto(
+public record PostDetailsProjection(
         int id,
         Instant time,
         boolean active,
