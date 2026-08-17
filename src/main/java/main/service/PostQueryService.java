@@ -1,8 +1,8 @@
 package main.service;
 
 import lombok.extern.slf4j.Slf4j;
+import main.api.response.PostResponse;
 import main.api.response.PostsResponse;
-import main.dto.PostDto;
 import main.dto.PostFlatDto;
 import main.mapper.PostMapper;
 import main.model.enums.ModerationStatus;
@@ -110,7 +110,7 @@ public class PostQueryService {
         return offset / POSTS_ON_PAGE;
     }
 
-    private List<PostDto> getPostDtosFromPosts(List<PostFlatDto> posts) {
-        return posts.stream().map(postMapper::toPostDto).toList();
+    private List<PostResponse> getPostDtosFromPosts(List<PostFlatDto> posts) {
+        return posts.stream().map(postMapper::toPostResponse).toList();
     }
 }

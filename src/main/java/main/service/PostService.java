@@ -5,9 +5,9 @@ import main.api.request.ModerationRequest;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.CalendarResponse;
+import main.api.response.PostDetailsResponse;
 import main.api.response.ResultResponse;
 import main.dto.CalendarDTO;
-import main.dto.PostDetailsDto;
 import main.dto.PostDetailsFlatDto;
 import main.mapper.PostMapper;
 import main.model.Post;
@@ -76,8 +76,8 @@ public class PostService {
         }
     }
 
-    public PostDetailsDto buildFullPostDetailsDto(PostDetailsFlatDto postDetails) {
-        return postMapper.toCurrentPostDto(postDetails,
+    public PostDetailsResponse buildFullPostDetailsResponse(PostDetailsFlatDto postDetails) {
+        return postMapper.toPostDetailsResponse(postDetails,
                 postCommentsRepository.findCommentsByPostId(postDetails.id()),
                 tagsRepository.findTagNamesByPostId(postDetails.id()));
     }

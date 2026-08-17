@@ -1,6 +1,8 @@
 package main.mapper;
 
 import main.api.request.PostRequest;
+import main.api.response.PostDetailsResponse;
+import main.api.response.PostResponse;
 import main.dto.*;
 import main.model.Post;
 import org.jsoup.Jsoup;
@@ -16,14 +18,14 @@ public interface PostMapper {
     @Mapping(source = "text", target = "announce", qualifiedByName = "announceOnly")
     @Mapping(source = "userId", target = "user.id")
     @Mapping(source = "userName", target = "user.name")
-    PostDto toPostDto(PostFlatDto post);
+    PostResponse toPostResponse(PostFlatDto post);
 
     @Mapping(source = "postDetailsFlatDto.time", target = "timestamp")
     @Mapping(source = "postCommentFlatDtos", target = "comments")
     @Mapping(source = "postDetailsFlatDto.userId", target = "user.id")
     @Mapping(source = "postDetailsFlatDto.userName", target = "user.name")
     @Mapping(source = "postDetailsFlatDto.userPhoto", target = "user.photo")
-    PostDetailsDto toCurrentPostDto(PostDetailsFlatDto postDetailsFlatDto, List<PostCommentFlatDto> postCommentFlatDtos, List<String> tags);
+    PostDetailsResponse toPostDetailsResponse(PostDetailsFlatDto postDetailsFlatDto, List<PostCommentFlatDto> postCommentFlatDtos, List<String> tags);
 
     @Mapping(target = "tags", ignore = true)
     @Mapping(source = "active", target = "isActive")
