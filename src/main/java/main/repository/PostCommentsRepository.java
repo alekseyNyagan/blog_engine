@@ -1,6 +1,6 @@
 package main.repository;
 
-import main.dto.PostCommentFlatDto;
+import main.repository.projection.CommentProjection;
 import main.model.PostComment;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,7 +12,7 @@ import java.util.List;
 @Repository
 public interface PostCommentsRepository extends JpaRepository<PostComment, Integer> {
     @Query("""
-                SELECT new main.dto.PostCommentFlatDto(
+                SELECT new main.repository.projection.CommentProjection(
                         c.id,
                         c.time,
                         c.text,
@@ -25,6 +25,6 @@ public interface PostCommentsRepository extends JpaRepository<PostComment, Integ
                     WHERE c.post.id = :postId
                     ORDER BY c.time ASC
             """)
-    List<PostCommentFlatDto> findCommentsByPostId(@Param("postId") int postId);
+    List<CommentProjection> findCommentsByPostId(@Param("postId") int postId);
 
 }

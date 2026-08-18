@@ -3,8 +3,8 @@ package main.mapper;
 import main.api.request.PostRequest;
 import main.api.response.PostDetailsResponse;
 import main.api.response.PostResponse;
-import main.dto.*;
 import main.model.Post;
+import main.repository.projection.CommentProjection;
 import main.repository.projection.PostDetailsProjection;
 import main.repository.projection.PostProjection;
 import org.jsoup.Jsoup;
@@ -27,7 +27,7 @@ public interface PostMapper {
     @Mapping(source = "postDetailsProjection.userId", target = "user.id")
     @Mapping(source = "postDetailsProjection.userName", target = "user.name")
     @Mapping(source = "postDetailsProjection.userPhoto", target = "user.photo")
-    PostDetailsResponse toPostDetailsResponse(PostDetailsProjection postDetailsProjection, List<PostCommentFlatDto> postCommentFlatDtos, List<String> tags);
+    PostDetailsResponse toPostDetailsResponse(PostDetailsProjection postDetailsProjection, List<CommentProjection> postCommentFlatDtos, List<String> tags);
 
     @Mapping(target = "tags", ignore = true)
     @Mapping(source = "active", target = "isActive")

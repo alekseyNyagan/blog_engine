@@ -2,7 +2,7 @@ package main.mapper;
 
 import main.api.request.RegistrationRequest;
 import main.api.response.BaseUserResponse;
-import main.dto.PostCommentFlatDto;
+import main.repository.projection.CommentProjection;
 import main.api.response.UserResponse;
 import main.model.User;
 import org.mapstruct.Mapper;
@@ -23,5 +23,5 @@ public interface UserMapper {
     @Mapping(source = "userId", target = "id")
     @Mapping(source = "userName", target = "name")
     @Mapping(source = "userPhoto", target = "photo")
-    BaseUserResponse toBaseUserResponse(PostCommentFlatDto postCommentFlatDto);
+    BaseUserResponse toBaseUserResponse(CommentProjection commentProjection);
 }
