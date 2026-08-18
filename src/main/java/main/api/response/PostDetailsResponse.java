@@ -2,7 +2,6 @@ package main.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import main.dto.BaseUserDto;
 import main.dto.PostCommentDto;
 
 import java.util.List;
@@ -10,7 +9,7 @@ import java.util.List;
 @Schema(description = "DTO with information about post got by id")
 public record PostDetailsResponse(@Schema(description = "Post id") int id,
                                   @Schema(description = "Date and time of post publication in UTC format") long timestamp,
-                                  BaseUserDto user,
+                                  BaseUserResponse user,
                                   @Schema(description = "Post title") String title,
                                   @Schema(description = "Likes count") long likeCount,
                                   @Schema(description = "Dislikes count") long dislikeCount,

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import main.api.response.BaseUserResponse;
 
 @Schema(description = "DTO with information about comment")
 @EqualsAndHashCode
@@ -16,5 +17,5 @@ public class PostCommentDto {
     private long timestamp;
     @Schema(description = "Text of the comment")
     private String text;
-    private BaseUserDto user;
+    private BaseUserResponse user;
 }
