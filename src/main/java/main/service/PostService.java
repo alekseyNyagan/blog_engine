@@ -7,7 +7,7 @@ import main.api.request.PostVoteRequest;
 import main.api.response.CalendarResponse;
 import main.api.response.PostDetailsResponse;
 import main.api.response.ResultResponse;
-import main.dto.CalendarDTO;
+import main.repository.projection.CalendarProjection;
 import main.repository.projection.PostDetailsProjection;
 import main.mapper.PostMapper;
 import main.model.Post;
@@ -95,7 +95,7 @@ public class PostService {
     public CalendarResponse getCalendar(int year) {
         CalendarResponse calendarResponse = new CalendarResponse();
         calendarResponse.setYears(postsRepository.findYearsWithCreatedPosts());
-        calendarResponse.setPosts(postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarDTO::getDate, CalendarDTO::getCount)));
+        calendarResponse.setPosts(postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarProjection::getDate, CalendarProjection::getCount)));
         return calendarResponse;
     }
 

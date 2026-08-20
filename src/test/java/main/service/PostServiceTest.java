@@ -5,7 +5,7 @@ import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.CalendarResponse;
 import main.api.response.ResultResponse;
-import main.dto.CalendarDTO;
+import main.repository.projection.CalendarProjection;
 import main.repository.projection.PostDetailsProjection;
 import main.mapper.PostMapper;
 import main.model.Post;
@@ -197,11 +197,11 @@ class PostServiceTest {
         int year = 2024;
         List<Integer> years = List.of(2023, 2024);
 
-        CalendarDTO dto1 = mock(CalendarDTO.class);
+        CalendarProjection dto1 = mock(CalendarProjection.class);
         when(dto1.getDate()).thenReturn("2024-06-06");
         when(dto1.getCount()).thenReturn(5);
 
-        CalendarDTO dto2 = mock(CalendarDTO.class);
+        CalendarProjection dto2 = mock(CalendarProjection.class);
         when(dto2.getDate()).thenReturn("2024-06-07");
         when(dto2.getCount()).thenReturn(2);
 

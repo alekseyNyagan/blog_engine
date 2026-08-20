@@ -1,7 +1,7 @@
 package main.repository;
 
 import main.api.response.StatisticsResponse;
-import main.dto.CalendarDTO;
+import main.repository.projection.CalendarProjection;
 import main.repository.projection.PostDetailsProjection;
 import main.repository.projection.PostProjection;
 import main.model.Post;
@@ -187,7 +187,7 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
             GROUP BY p.time
             ORDER BY p.time
             """)
-    List<CalendarDTO> countPostsByYear(@Param("year") int year);
+    List<CalendarProjection> countPostsByYear(@Param("year") int year);
 
     @Query("""
             SELECT new main.repository.projection.PostProjection(
