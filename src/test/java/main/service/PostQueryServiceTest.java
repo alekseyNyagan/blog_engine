@@ -63,8 +63,8 @@ class PostQueryServiceTest {
 
         PostsResponse response = postQueryService.getPosts(0, 10, FilterMode.BEST);
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postResponse), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
@@ -75,8 +75,8 @@ class PostQueryServiceTest {
 
         PostsResponse response = postQueryService.getPostsByQuery(0, 10, "test");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postResponse), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
@@ -92,8 +92,8 @@ class PostQueryServiceTest {
 
         PostsResponse response = postQueryService.getPostsByDate(0, 10, date);
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postResponse), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
@@ -104,8 +104,8 @@ class PostQueryServiceTest {
 
         PostsResponse response = postQueryService.getPostsByTag(0, 10, "spring");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postResponse), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
@@ -116,8 +116,8 @@ class PostQueryServiceTest {
 
         PostsResponse response = postQueryService.getModerationPosts(0, 10, ModerationStatus.NEW);
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postResponse), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
@@ -128,8 +128,8 @@ class PostQueryServiceTest {
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "inactive", "test@example.com");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postResponse), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
@@ -140,8 +140,8 @@ class PostQueryServiceTest {
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "pending", "test@example.com");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postResponse), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
@@ -152,8 +152,8 @@ class PostQueryServiceTest {
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "declined", "test@example.com");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postResponse), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
@@ -164,16 +164,16 @@ class PostQueryServiceTest {
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "published", "test@example.com");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postResponse), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getMyPosts_ShouldReturnEmpty_WhenStatusUnknown() {
         PostsResponse response = postQueryService.getMyPosts(0, 10, "unknown_status", "test@example.com");
 
-        assertEquals(0, response.getCount());
-        assertTrue(response.getPosts().isEmpty());
+        assertEquals(0, response.count());
+        assertTrue(response.posts().isEmpty());
     }
 
 }

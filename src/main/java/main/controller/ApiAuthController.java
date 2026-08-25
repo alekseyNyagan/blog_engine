@@ -46,7 +46,7 @@ public class ApiAuthController {
     @GetMapping("/check")
     public ResponseEntity<LoginResponse> check(Principal principal) {
         if (principal == null) {
-            return ResponseEntity.ok(new LoginResponse());
+            return ResponseEntity.ok(new LoginResponse(false));
         }
         return ResponseEntity.ok(authService.check(principal.getName()));
     }

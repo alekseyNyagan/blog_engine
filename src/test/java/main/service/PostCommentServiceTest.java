@@ -78,7 +78,7 @@ class PostCommentServiceTest {
         CommentRequest request = buildRequest("", COMMENT_TEXT);
         CommentResponse response = postCommentService.addComment(request, USER_ID);
 
-        assertEquals(SAVED_COMMENT_ID, response.getId());
+        assertEquals(SAVED_COMMENT_ID, response.id());
 
         ArgumentCaptor<PostComment> captor = ArgumentCaptor.forClass(PostComment.class);
         verify(postCommentsRepository).save(captor.capture());
@@ -98,7 +98,7 @@ class PostCommentServiceTest {
         CommentRequest request = buildRequest(PARENT_COMMENT_ID, COMMENT_TEXT);
         CommentResponse response = postCommentService.addComment(request, USER_ID);
 
-        assertEquals(SAVED_COMMENT_ID, response.getId());
+        assertEquals(SAVED_COMMENT_ID, response.id());
 
         ArgumentCaptor<PostComment> captor = ArgumentCaptor.forClass(PostComment.class);
         verify(postCommentsRepository).save(captor.capture());

@@ -34,7 +34,6 @@ public class PostCommentService {
     @Transactional
     public CommentResponse addComment(CommentRequest commentRequest, int userId) {
         log.info("User {} is adding a comment to post {}", userId, commentRequest.getPostId());
-        CommentResponse commentResponse = new CommentResponse();
         Post post = postsRepository.findById(commentRequest.getPostId())
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
 
@@ -49,8 +48,7 @@ public class PostCommentService {
         }
         postComment.setPost(post);
         postCommentsRepository.save(postComment);
-        commentResponse.setId(postComment.getId());
         log.info("Comment {} added successfully to post {}", postComment.getId(), commentRequest.getPostId());
-        return commentResponse;
+        return new CommentResponse(postComment.getId());
     }
 }

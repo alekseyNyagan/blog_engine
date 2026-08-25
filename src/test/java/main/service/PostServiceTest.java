@@ -133,7 +133,7 @@ class PostServiceTest {
 
         ResultResponse response = postService.addPost(request, userId);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         verify(postsRepository).save(any(Post.class));
     }
 
@@ -150,7 +150,7 @@ class PostServiceTest {
 
         ResultResponse response = postService.makePostVote(voteRequest, (byte) 1, userId);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         verify(post).addVote(any(PostVote.class));
         verify(postsRepository).save(post);
     }
@@ -168,7 +168,7 @@ class PostServiceTest {
 
         ResultResponse response = postService.moderation(request, moderatorId);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         assertEquals(ModerationStatus.ACCEPTED, post.getModerationStatus());
         assertEquals(moderatorId, post.getModeratorId());
         verify(postsRepository).save(post);
@@ -188,7 +188,7 @@ class PostServiceTest {
 
         ResultResponse result = postService.updatePost(postId, request, userId);
 
-        assertTrue(result.isResult());
+        assertTrue(result.result());
         verify(postsRepository).save(post);
     }
 
@@ -210,10 +210,10 @@ class PostServiceTest {
 
         CalendarResponse response = postService.getCalendar(year);
 
-        assertEquals(years, response.getYears());
-        assertEquals(2, response.getPosts().size());
-        assertEquals(5, response.getPosts().get("2024-06-06"));
-        assertEquals(2, response.getPosts().get("2024-06-07"));
+        assertEquals(years, response.years());
+        assertEquals(2, response.posts().size());
+        assertEquals(5, response.posts().get("2024-06-06"));
+        assertEquals(2, response.posts().get("2024-06-07"));
     }
 
 }

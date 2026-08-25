@@ -35,8 +35,6 @@ public class CaptchaCodeService {
 
     @Transactional
     public CaptchaCodeResponse getCaptcha() {
-        CaptchaCodeResponse captchaCodeResponse = new CaptchaCodeResponse();
-
         String code = cage.getTokenGenerator().next().substring(CODE_START_INDEX, CODE_END_INDEX);
         String secretCode = cage.getTokenGenerator().next();
 
@@ -46,12 +44,11 @@ public class CaptchaCodeService {
 
         captchaCodeRepository.save(captchaCode);
 
-        captchaCodeResponse.setImage(imageService.drawCaptchaImage(cage, code));
-        captchaCodeResponse.setSecret(secretCode);
+        String image = imageService.drawCaptchaImage(cage, code);
 
         Instant threshold = Instant.now().minus(1L, ChronoUnit.HOURS);
         captchaCodeRepository.deleteAllByTimeLessThan(threshold);
-        return captchaCodeResponse;
+        return new CaptchaCodeResponse(secretCode, image);
     }
 
     public boolean isCaptchaNotValid(String secret, String value) {

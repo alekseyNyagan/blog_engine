@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -93,10 +94,9 @@ public class PostService {
     }
 
     public CalendarResponse getCalendar(int year) {
-        CalendarResponse calendarResponse = new CalendarResponse();
-        calendarResponse.setYears(postsRepository.findYearsWithCreatedPosts());
-        calendarResponse.setPosts(postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarProjection::getDate, CalendarProjection::getCount)));
-        return calendarResponse;
+        List<Integer> yearsWithCreatedPosts = postsRepository.findYearsWithCreatedPosts();
+        Map<String, Integer> postsByYear = postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarProjection::getDate, CalendarProjection::getCount));
+        return new CalendarResponse(yearsWithCreatedPosts, postsByYear);
     }
 
     @Transactional

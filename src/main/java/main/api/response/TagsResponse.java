@@ -1,17 +1,9 @@
 package main.api.response;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
 @Schema(description = "Response to the client with the list of existing tags")
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class TagsResponse {
-    @Schema(description = "List of tags")
-    private Set<TagResponse> tags;
+public record TagsResponse(@Schema(description = "List of tags") Set<TagResponse> tags) {
 }

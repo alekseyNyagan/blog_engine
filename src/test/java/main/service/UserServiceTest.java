@@ -58,8 +58,8 @@ public class UserServiceTest {
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 
-        assertTrue(errorsResponse.isResult());
-        assertNull(errorsResponse.getErrors());
+        assertTrue(errorsResponse.result());
+        assertNull(errorsResponse.errors());
         verify(usersRepository, times(1)).save(any(User.class));
     }
 
@@ -71,8 +71,8 @@ public class UserServiceTest {
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 
-        assertFalse(errorsResponse.isResult());
-        assertEquals(validationErrors, errorsResponse.getErrors());
+        assertFalse(errorsResponse.result());
+        assertEquals(validationErrors, errorsResponse.errors());
         verify(usersRepository, never()).save(any(User.class));
     }
 
@@ -88,7 +88,7 @@ public class UserServiceTest {
 
         ErrorsResponse response = userService.updateProfile(request, null, email);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         assertEquals("New Name", user.getName());
         verify(usersRepository, times(1)).save(user);
     }
@@ -106,7 +106,7 @@ public class UserServiceTest {
 
         ErrorsResponse response = userService.updateProfile(request, null, email);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         assertNull(user.getPhoto());
         verify(usersRepository, times(1)).save(user);
     }
@@ -125,7 +125,7 @@ public class UserServiceTest {
 
         ErrorsResponse response = userService.updateProfile(request, photo, email);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         assertEquals("path/to/new/photo.jpg", user.getPhoto());
         verify(usersRepository, times(1)).save(user);
     }
@@ -143,8 +143,8 @@ public class UserServiceTest {
 
         ErrorsResponse response = userService.updateProfile(request, photo, email);
 
-        assertFalse(response.isResult());
-        assertTrue(response.getErrors().containsKey("photo"));
+        assertFalse(response.result());
+        assertTrue(response.errors().containsKey("photo"));
         verify(usersRepository, never()).save(user);
     }
 }
