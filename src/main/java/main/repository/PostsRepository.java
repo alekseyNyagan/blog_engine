@@ -184,8 +184,8 @@ public interface PostsRepository extends JpaRepository<Post, Integer> {
             WHERE p.isActive = 1
             AND p.moderationStatus = main.model.enums.ModerationStatus.ACCEPTED
             AND FUNCTION('YEAR', p.time) = :year
-            GROUP BY p.time
-            ORDER BY p.time
+            GROUP BY FUNCTION('DATE_FORMAT', p.time, '%Y-%m-%d')
+            ORDER BY FUNCTION('DATE_FORMAT', p.time, '%Y-%m-%d') ASC
             """)
     List<CalendarProjection> countPostsByYear(@Param("year") int year);
 
