@@ -120,7 +120,7 @@ public class PostService {
         Post post = postMapper.fromPostRequestToPost(postRequest);
 
         List<Tag> tags = new ArrayList<>();
-        postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
+        postRequest.tags().forEach(t -> tags.add(new Tag(t)));
 
         if (Boolean.TRUE.equals(globalSettingsService.getGlobalSettings().get(POST_PREMODERATION_SETTING)) && user.getIsModerator() != 1) {
             post.setModerationStatus(ModerationStatus.NEW);
@@ -141,7 +141,7 @@ public class PostService {
     @Transactional
     public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue, int userId) {
         User currentUser = usersRepository.getReferenceById(userId);
-        Post post = findPostById(postVoteRequest.getPostId());
+        Post post = findPostById(postVoteRequest.postId());
         PostVote postVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
         post.addVote(postVote);
         log.info("User {} voted for post {}", userId, post.getId());
@@ -150,16 +150,16 @@ public class PostService {
 
     @Transactional
     public ResultResponse moderation(ModerationRequest moderationRequest, int moderatorId) {
-        Post post = findPostById(moderationRequest.getPostId());
+        Post post = findPostById(moderationRequest.postId());
 
-        if (moderationRequest.getDecision().equals(ACCEPT_DECISION)) {
+        if (moderationRequest.decision().equals(ACCEPT_DECISION)) {
             post.setModerationStatus(ModerationStatus.ACCEPTED);
         } else {
             post.setModerationStatus(ModerationStatus.DECLINED);
         }
 
         post.setModeratorId(moderatorId);
-        log.info("Moderator {} moderated post {} with decision: {}", moderatorId, post.getId(), moderationRequest.getDecision());
+        log.info("Moderator {} moderated post {} with decision: {}", moderatorId, post.getId(), moderationRequest.decision());
         return new ResultResponse(true);
     }
 

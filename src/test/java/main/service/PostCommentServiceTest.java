@@ -45,11 +45,7 @@ class PostCommentServiceTest {
     // --- Вспомогательные методы ---
 
     private CommentRequest buildRequest(Object parentId, String text) {
-        CommentRequest request = new CommentRequest();
-        request.setParentId(parentId);
-        request.setPostId(POST_ID);
-        request.setText(text);
-        return request;
+        return new CommentRequest(parentId, POST_ID, text);
     }
 
     private Post mockPost() {

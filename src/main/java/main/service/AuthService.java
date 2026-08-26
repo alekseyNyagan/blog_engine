@@ -35,13 +35,13 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest loginRequest) {
-        log.info("Login attempt for user: {}", loginRequest.getEmail());
+        log.info("Login attempt for user: {}", loginRequest.email());
         Authentication auth = authenticationManager
                 .authenticate(
-                        new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+                        new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password()));
         SecurityContextHolder.getContext().setAuthentication(auth);
-        log.info("User {} successfully logged in", loginRequest.getEmail());
-        return getLoginResponse(loginRequest.getEmail());
+        log.info("User {} successfully logged in", loginRequest.email());
+        return getLoginResponse(loginRequest.email());
     }
 
     public LoginResponse check(String email) {

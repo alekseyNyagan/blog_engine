@@ -124,8 +124,7 @@ class PostServiceTest {
     @Test
     void addPost_ShouldReturnSuccessResponse() {
         int userId = 1;
-        PostRequest request = new PostRequest();
-        request.setTags(List.of("tag1", "tag2"));
+        PostRequest request = new PostRequest(0L, (byte) 1, "Valid Title", List.of("tag1", "tag2"), "Valid Text Content");
         User user = mock(User.class);
 
         when(usersRepository.getReferenceById(userId)).thenReturn(user);
@@ -140,8 +139,7 @@ class PostServiceTest {
     @Test
     void makePostVote_ShouldReturnSuccessResponse() {
         int userId = 1;
-        PostVoteRequest voteRequest = new PostVoteRequest();
-        voteRequest.setPostId(42);
+        PostVoteRequest voteRequest = new PostVoteRequest(42);
         Post post = mock(Post.class);
         User user = mock(User.class);
 
@@ -158,9 +156,7 @@ class PostServiceTest {
     @Test
     void moderation_ShouldAcceptPost() {
         int moderatorId = 101;
-        ModerationRequest request = new ModerationRequest();
-        request.setPostId(7);
-        request.setDecision("accept");
+        ModerationRequest request = new ModerationRequest(7, "accept");
 
         Post post = new Post();
 
@@ -178,8 +174,7 @@ class PostServiceTest {
     void updatePost_ShouldReturnSuccessResponse() {
         int userId = 1;
         int postId = 123;
-        PostRequest request = new PostRequest();
-        request.setTags(List.of("tag1", "tag2"));
+        PostRequest request = new PostRequest(0L, (byte) 1, "Valid Title", List.of("tag1", "tag2"), "Valid Text Content");
         User user = mock(User.class);
         Post post = mock(Post.class);
 

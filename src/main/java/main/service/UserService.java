@@ -57,16 +57,16 @@ public class UserService {
 
     @Transactional
     public ErrorsResponse addUser(RegistrationRequest registrationRequest) {
-        log.info("Registering new user with email: {}", registrationRequest.getEmail());
+        log.info("Registering new user with email: {}", registrationRequest.email());
         try {
             userValidator.validateRegistration(registrationRequest);
             User user = mapper.fromRegistrationRequestToUser(registrationRequest);
-            user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
+            user.setPassword(passwordEncoder.encode(registrationRequest.password()));
             usersRepository.save(user);
-            log.info("User {} registered successfully", registrationRequest.getEmail());
+            log.info("User {} registered successfully", registrationRequest.email());
             return new ErrorsResponse(true);
         } catch (ValidationException exception) {
-            log.warn("Failed to register user {}: {}", registrationRequest.getEmail(), exception.getErrors());
+            log.warn("Failed to register user {}: {}", registrationRequest.email(), exception.getErrors());
             return new ErrorsResponse(false, exception.getErrors());
         }
     }
@@ -84,7 +84,7 @@ public class UserService {
         if (photo != null) {
             imageService.validateImage(photo, PHOTO_ERROR_KEY, PHOTO_SIZE_ERROR_MESSAGE, null);
             user.setPhoto(imageService.processAndEncodeImage(photo));
-        } else if (request.getRemovePhoto() == REMOVE_PHOTO_OPTION) {
+        } else if (request.removePhoto() == REMOVE_PHOTO_OPTION) {
             user.setPhoto(null);
         }
 
@@ -94,17 +94,17 @@ public class UserService {
     }
 
     public ResultResponse restore(RestoreRequest restoreRequest, HttpServletRequest httpServletRequest) throws MessagingException {
-        log.info("Restoring password for user {}", restoreRequest.getEmail());
+        log.info("Restoring password for user {}", restoreRequest.email());
 
-        Optional<String> hashOptional = self.generateAndSaveRestoreCode(restoreRequest.getEmail());
+        Optional<String> hashOptional = self.generateAndSaveRestoreCode(restoreRequest.email());
 
         if (hashOptional.isPresent()) {
-            mailService.sendRestoreEmail(restoreRequest.getEmail(), httpServletRequest.getServerName(), hashOptional.get());
-            log.info("Password restoration email sent to {}", restoreRequest.getEmail());
+            mailService.sendRestoreEmail(restoreRequest.email(), httpServletRequest.getServerName(), hashOptional.get());
+            log.info("Password restoration email sent to {}", restoreRequest.email());
             return new ResultResponse(true);
         }
 
-        log.warn("Failed to restore password for user {}: user not found", restoreRequest.getEmail());
+        log.warn("Failed to restore password for user {}: user not found", restoreRequest.email());
         return new ResultResponse(false);
     }
 
@@ -125,15 +125,15 @@ public class UserService {
     public ErrorsResponse password(PasswordRequest passwordRequest) {
         log.info("Attempting to change password with a restore token");
         User user = userValidator.validatePasswordChange(passwordRequest);
-        user.setPassword(passwordEncoder.encode(passwordRequest.getPassword()));
+        user.setPassword(passwordEncoder.encode(passwordRequest.password()));
         return new ErrorsResponse(true);
     }
 
     private void updateBasicUserInfo(UpdateProfileRequest updateProfileRequest, User user) {
-        user.setName(updateProfileRequest.getName());
-        user.setEmail(updateProfileRequest.getEmail());
-        if (updateProfileRequest.getPassword() != null) {
-            user.setPassword(passwordEncoder.encode(updateProfileRequest.getPassword()));
+        user.setName(updateProfileRequest.name());
+        user.setEmail(updateProfileRequest.email());
+        if (updateProfileRequest.password() != null) {
+            user.setPassword(passwordEncoder.encode(updateProfileRequest.password()));
         }
     }
 }

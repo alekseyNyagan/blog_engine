@@ -33,22 +33,22 @@ public class PostCommentService {
 
     @Transactional
     public CommentResponse addComment(CommentRequest commentRequest, int userId) {
-        log.info("User {} is adding a comment to post {}", userId, commentRequest.getPostId());
-        Post post = postsRepository.findById(commentRequest.getPostId())
+        log.info("User {} is adding a comment to post {}", userId, commentRequest.postId());
+        Post post = postsRepository.findById(commentRequest.postId())
                 .orElseThrow(() -> new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
 
         main.model.User currentUser = usersRepository.getReferenceById(userId);
 
         PostComment postComment = new PostComment();
         postComment.setUser(currentUser);
-        postComment.setText(commentRequest.getText());
-        if (commentRequest.getParentId() instanceof Integer parentId) {
+        postComment.setText(commentRequest.text());
+        if (commentRequest.parentId() instanceof Integer parentId) {
             postCommentsRepository.findById(parentId).orElseThrow(() -> new NoSuchElementException(POST_COMMENT_NOT_FOUND_ERROR_MESSAGE));
             postComment.setParentId(parentId);
         }
         postComment.setPost(post);
         postCommentsRepository.save(postComment);
-        log.info("Comment {} added successfully to post {}", postComment.getId(), commentRequest.getPostId());
+        log.info("Comment {} added successfully to post {}", postComment.getId(), commentRequest.postId());
         return new CommentResponse(postComment.getId());
     }
 }

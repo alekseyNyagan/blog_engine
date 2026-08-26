@@ -47,7 +47,7 @@ public class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        registrationRequest = new RegistrationRequest();
+        registrationRequest = new RegistrationRequest("email@example.com", "name", "password", "captcha", "captchaSecret");
     }
 
     @Test
@@ -80,8 +80,7 @@ public class UserServiceTest {
     @DisplayName("Should update user profile successfully (no photo change)")
     void testUpdateProfile_SuccessNoPhotoChange() throws IOException {
         String email = "test@example.com";
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setName("New Name");
+        UpdateProfileRequest request = new UpdateProfileRequest("photo.jpg", "New Name", "email", "password", 0);
         User user = new User();
 
         when(usersRepository.findUserByEmail(email)).thenReturn(Optional.of(user));
@@ -97,8 +96,7 @@ public class UserServiceTest {
     @DisplayName("Should update user profile and remove photo")
     void testUpdateProfile_RemovePhoto() throws IOException {
         String email = "test@example.com";
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setRemovePhoto(1);
+        UpdateProfileRequest request = new UpdateProfileRequest("photo.jpg", "New Name", "email", "password", 1);
         User user = new User();
         user.setPhoto("path/to/old/photo.jpg");
 
@@ -115,7 +113,7 @@ public class UserServiceTest {
     @DisplayName("Should update user profile with new photo")
     void testUpdateProfile_WithNewPhoto() throws IOException {
         String email = "test@example.com";
-        UpdateProfileRequest request = new UpdateProfileRequest();
+        UpdateProfileRequest request = new UpdateProfileRequest("photo.jpg", "New Name", "email", "password", 0);
         User user = new User();
         MultipartFile photo = new MockMultipartFile("photo", "new_photo.jpg", "image/jpeg", new byte[10]);
 
@@ -134,7 +132,7 @@ public class UserServiceTest {
     @DisplayName("Should fail to update profile if photo is too large")
     void testUpdateProfile_PhotoTooLarge() throws IOException {
         String email = "test@example.com";
-        UpdateProfileRequest request = new UpdateProfileRequest();
+        UpdateProfileRequest request = new UpdateProfileRequest("photo.jpg", "New Name", "email", "password", 0);
         User user = new User();
         MultipartFile photo = new MockMultipartFile("photo", "large_photo.jpg", "image/jpeg", new byte[10]);
 
