@@ -1,8 +1,12 @@
 package main.mapper;
 
 import main.api.request.PostRequest;
-import main.dto.*;
+import main.api.response.PostDetailsResponse;
+import main.api.response.PostResponse;
 import main.model.Post;
+import main.repository.projection.CommentProjection;
+import main.repository.projection.PostDetailsProjection;
+import main.repository.projection.PostProjection;
 import org.jsoup.Jsoup;
 import org.mapstruct.*;
 
@@ -16,14 +20,14 @@ public interface PostMapper {
     @Mapping(source = "text", target = "announce", qualifiedByName = "announceOnly")
     @Mapping(source = "userId", target = "user.id")
     @Mapping(source = "userName", target = "user.name")
-    PostDto toPostDto(PostFlatDto post);
+    PostResponse toPostResponse(PostProjection post);
 
-    @Mapping(source = "postDetailsFlatDto.time", target = "timestamp")
+    @Mapping(source = "postDetailsProjection.time", target = "timestamp")
     @Mapping(source = "postCommentFlatDtos", target = "comments")
-    @Mapping(source = "postDetailsFlatDto.userId", target = "user.id")
-    @Mapping(source = "postDetailsFlatDto.userName", target = "user.name")
-    @Mapping(source = "postDetailsFlatDto.userPhoto", target = "user.photo")
-    PostDetailsDto toCurrentPostDto(PostDetailsFlatDto postDetailsFlatDto, List<PostCommentFlatDto> postCommentFlatDtos, List<String> tags);
+    @Mapping(source = "postDetailsProjection.userId", target = "user.id")
+    @Mapping(source = "postDetailsProjection.userName", target = "user.name")
+    @Mapping(source = "postDetailsProjection.userPhoto", target = "user.photo")
+    PostDetailsResponse toPostDetailsResponse(PostDetailsProjection postDetailsProjection, List<CommentProjection> postCommentFlatDtos, List<String> tags);
 
     @Mapping(target = "tags", ignore = true)
     @Mapping(source = "active", target = "isActive")

@@ -5,10 +5,10 @@ import main.api.request.ModerationRequest;
 import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.CalendarResponse;
+import main.api.response.PostDetailsResponse;
 import main.api.response.ResultResponse;
-import main.dto.CalendarDTO;
-import main.dto.PostDetailsDto;
-import main.dto.PostDetailsFlatDto;
+import main.repository.projection.CalendarProjection;
+import main.repository.projection.PostDetailsProjection;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -64,25 +65,25 @@ public class PostService {
     }
 
     @Transactional(readOnly = true)
-    public PostDetailsFlatDto getPostDetails(int id) {
+    public PostDetailsProjection getPostDetails(int id) {
         return postsRepository.findPostDetailsById(id).orElseThrow(() ->
                 new NoSuchElementException(POST_NOT_FOUND_ERROR_MESSAGE));
     }
 
     @Transactional
-    public void incrementViewCount(PostDetailsFlatDto post, UserDetails userDetails) {
+    public void incrementViewCount(PostDetailsProjection post, UserDetails userDetails) {
         if (shouldIncrementViewCount(post, userDetails)) {
             postsRepository.updateViewCount(post.viewCount() + 1, post.id());
         }
     }
 
-    public PostDetailsDto buildFullPostDetailsDto(PostDetailsFlatDto postDetails) {
-        return postMapper.toCurrentPostDto(postDetails,
+    public PostDetailsResponse buildFullPostDetailsResponse(PostDetailsProjection postDetails) {
+        return postMapper.toPostDetailsResponse(postDetails,
                 postCommentsRepository.findCommentsByPostId(postDetails.id()),
                 tagsRepository.findTagNamesByPostId(postDetails.id()));
     }
 
-    private boolean shouldIncrementViewCount(PostDetailsFlatDto post, UserDetails user) {
+    private boolean shouldIncrementViewCount(PostDetailsProjection post, UserDetails user) {
         if (user == null) {
             return true;
         }
@@ -93,10 +94,9 @@ public class PostService {
     }
 
     public CalendarResponse getCalendar(int year) {
-        CalendarResponse calendarResponse = new CalendarResponse();
-        calendarResponse.setYears(postsRepository.findYearsWithCreatedPosts());
-        calendarResponse.setPosts(postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarDTO::getDate, CalendarDTO::getCount)));
-        return calendarResponse;
+        List<Integer> yearsWithCreatedPosts = postsRepository.findYearsWithCreatedPosts();
+        Map<String, Integer> postsByYear = postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarProjection::getDate, CalendarProjection::getCount));
+        return new CalendarResponse(yearsWithCreatedPosts, postsByYear);
     }
 
     @Transactional
@@ -120,7 +120,7 @@ public class PostService {
         Post post = postMapper.fromPostRequestToPost(postRequest);
 
         List<Tag> tags = new ArrayList<>();
-        postRequest.getTags().forEach(t -> tags.add(new Tag(t)));
+        postRequest.tags().forEach(t -> tags.add(new Tag(t)));
 
         if (Boolean.TRUE.equals(globalSettingsService.getGlobalSettings().get(POST_PREMODERATION_SETTING)) && user.getIsModerator() != 1) {
             post.setModerationStatus(ModerationStatus.NEW);
@@ -141,7 +141,7 @@ public class PostService {
     @Transactional
     public ResultResponse makePostVote(PostVoteRequest postVoteRequest, byte postVoteValue, int userId) {
         User currentUser = usersRepository.getReferenceById(userId);
-        Post post = findPostById(postVoteRequest.getPostId());
+        Post post = findPostById(postVoteRequest.postId());
         PostVote postVote = new PostVote(currentUser, post, LocalDateTime.now(), postVoteValue);
         post.addVote(postVote);
         log.info("User {} voted for post {}", userId, post.getId());
@@ -150,16 +150,16 @@ public class PostService {
 
     @Transactional
     public ResultResponse moderation(ModerationRequest moderationRequest, int moderatorId) {
-        Post post = findPostById(moderationRequest.getPostId());
+        Post post = findPostById(moderationRequest.postId());
 
-        if (moderationRequest.getDecision().equals(ACCEPT_DECISION)) {
+        if (moderationRequest.decision().equals(ACCEPT_DECISION)) {
             post.setModerationStatus(ModerationStatus.ACCEPTED);
         } else {
             post.setModerationStatus(ModerationStatus.DECLINED);
         }
 
         post.setModeratorId(moderatorId);
-        log.info("Moderator {} moderated post {} with decision: {}", moderatorId, post.getId(), moderationRequest.getDecision());
+        log.info("Moderator {} moderated post {} with decision: {}", moderatorId, post.getId(), moderationRequest.decision());
         return new ResultResponse(true);
     }
 

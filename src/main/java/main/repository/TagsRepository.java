@@ -1,6 +1,6 @@
 package main.repository;
 
-import main.dto.TagDTO;
+import main.api.response.TagResponse;
 import main.model.Tag;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -25,7 +25,7 @@ public interface TagsRepository extends JpaRepository<Tag, Integer> {
             JOIN tags t2 on t2.id = p.tag_id WHERE is_active = 1 AND moderation_status = 'ACCEPTED' AND time <= now() GROUP BY t2.id) AS temp)
             SELECT name, (1 / (max_count / post_count)) * (tag_count / post_count) AS weight FROM tag_temp JOIN post_temp JOIN max_count_post_by_tag
             """)
-    Set<TagDTO> getTags();
+    Set<TagResponse> getTags();
 
     @Query("""
                 SELECT t.name AS name

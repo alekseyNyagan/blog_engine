@@ -49,8 +49,8 @@ class CaptchaCodeServiceTest {
         CaptchaCodeResponse response = captchaCodeService.getCaptcha();
 
         // then
-        assertThat(response.getSecret()).isEqualTo("secret-xyz");
-        assertThat(response.getImage()).isEqualTo("data:image/png;base64,abc");
+        assertThat(response.secret()).isEqualTo("secret-xyz");
+        assertThat(response.image()).isEqualTo("data:image/png;base64,abc");
 
         // проверяем, что капча сохранена с правильными полями
         ArgumentCaptor<CaptchaCode> captor = ArgumentCaptor.forClass(CaptchaCode.class);

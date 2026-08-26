@@ -1,7 +1,7 @@
 package main.mapper;
 
-import main.dto.PostCommentDto;
-import main.dto.PostCommentFlatDto;
+import main.api.response.PostCommentResponse;
+import main.repository.projection.CommentProjection;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -12,5 +12,5 @@ public interface PostCommentMapper {
 
     @Mapping(source = "postComment", target = "user")
     @Mapping(source = "time", target = "timestamp")
-    PostCommentDto toPostCommentDto(PostCommentFlatDto postComment);
+    PostCommentResponse toPostCommentResponse(CommentProjection postComment);
 }

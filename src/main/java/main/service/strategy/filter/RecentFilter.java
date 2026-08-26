@@ -2,7 +2,7 @@ package main.service.strategy.filter;
 
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import main.dto.PostFlatDto;
+import main.repository.projection.PostProjection;
 import main.model.Post;
 import main.repository.PostsRepository;
 import main.service.PostQueryService;
@@ -26,7 +26,7 @@ public class RecentFilter implements FilterStrategy {
     }
 
     @Override
-    public Page<PostFlatDto> execute(int pageNumber, int limit) {
+    public Page<PostProjection> execute(int pageNumber, int limit) {
         Sort dateSort = Sort.by(Sort.Direction.DESC, Post::getTime);
         Pageable page = PageRequest.of(pageNumber, limit, dateSort);
         return postsRepository.findPosts(page);

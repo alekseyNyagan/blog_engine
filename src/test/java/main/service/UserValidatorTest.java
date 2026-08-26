@@ -34,15 +34,9 @@ public class UserValidatorTest {
 
     @BeforeEach
     void setUp() {
-        registrationRequest = new RegistrationRequest();
-        registrationRequest.setCaptcha("testCaptcha");
-        registrationRequest.setCaptchaSecret("testSecret");
-        registrationRequest.setEmail("test@example.com");
+        registrationRequest = new RegistrationRequest("test@example.com", "name", "password", "testCaptcha", "testSecret");
 
-        passwordRequest = new PasswordRequest();
-        passwordRequest.setCaptcha("testCaptcha");
-        passwordRequest.setCaptchaSecret("testSecret");
-        passwordRequest.setCode("testCode");
+        passwordRequest = new PasswordRequest("testCode", null, "testCaptcha", "testSecret");
     }
 
     @Test

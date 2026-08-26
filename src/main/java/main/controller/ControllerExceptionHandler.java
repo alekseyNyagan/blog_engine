@@ -33,14 +33,13 @@ public class ControllerExceptionHandler extends ResponseEntityExceptionHandler {
             @NonNull WebRequest request) {
         BindingResult bindingResult = ex.getBindingResult();
         List<FieldError> fieldErrors = bindingResult.getFieldErrors();
-        ErrorsResponse errorsResponse = new ErrorsResponse();
         Map<String, String> errors = new HashMap<>();
         for (FieldError fieldError : fieldErrors) {
             String errorMessage = fieldError.getDefaultMessage();
             String fieldName = fieldError.getField();
             errors.put(fieldName, errorMessage);
         }
-        errorsResponse.setErrors(errors);
+        ErrorsResponse errorsResponse = new ErrorsResponse(false, errors);
         return new ResponseEntity<>(errorsResponse, HttpStatus.BAD_REQUEST);
     }
 

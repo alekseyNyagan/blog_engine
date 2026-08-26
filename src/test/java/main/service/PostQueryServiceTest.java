@@ -1,8 +1,8 @@
 package main.service;
 
+import main.api.response.PostResponse;
 import main.api.response.PostsResponse;
-import main.dto.PostDto;
-import main.dto.PostFlatDto;
+import main.repository.projection.PostProjection;
 import main.mapper.PostMapper;
 import main.model.enums.ModerationStatus;
 import main.repository.PostsRepository;
@@ -39,141 +39,141 @@ class PostQueryServiceTest {
     private FilterStrategy filterStrategy;
 
     @Mock
-    private PostFlatDto postFlatDto;
+    private PostProjection postProjection;
 
     @Mock
-    private PostDto postDto;
+    private PostResponse postResponse;
 
     @InjectMocks
     private PostQueryService postQueryService;
 
-    private List<PostFlatDto> flatDtos;
+    private List<PostProjection> flatDtos;
 
     @BeforeEach
     void setUp() {
         PostQueryService.addFilterStrategy(FilterMode.BEST, filterStrategy);
-        flatDtos = List.of(postFlatDto);
+        flatDtos = List.of(postProjection);
     }
 
     @Test
     void getPosts_ShouldReturnFilteredPosts() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(filterStrategy.execute(0, 10)).thenReturn(page);
-        when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getPosts(0, 10, FilterMode.BEST);
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postDto), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getPostsByQuery_ShouldReturnMatchingPosts() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByTextLike("test", PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getPostsByQuery(0, 10, "test");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postDto), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getPostsByDate_ShouldReturnMatchingPosts() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         String date = "2024-06-06";
         LocalDate localDate = LocalDate.parse(date);
         Instant from = localDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
         Instant to = localDate.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant();
 
         when(postsRepository.findPostsByTime(from, to, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getPostsByDate(0, 10, date);
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postDto), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getPostsByTag_ShouldReturnTaggedPosts() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByTag("spring", PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getPostsByTag(0, 10, "spring");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postDto), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getModerationPosts_ShouldReturnPostsWithStatus() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByModerationStatus(ModerationStatus.NEW, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getModerationPosts(0, 10, ModerationStatus.NEW);
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postDto), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusInactive() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUser("test@example.com", PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "inactive", "test@example.com");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postDto), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusPending() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUserAndModerationStatus("test@example.com", ModerationStatus.NEW, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "pending", "test@example.com");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postDto), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusDeclined() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUserAndModerationStatus("test@example.com", ModerationStatus.DECLINED, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "declined", "test@example.com");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postDto), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getMyPosts_ShouldReturnUserPosts_WhenStatusPublished() {
-        Page<PostFlatDto> page = new PageImpl<>(flatDtos);
+        Page<PostProjection> page = new PageImpl<>(flatDtos);
         when(postsRepository.findPostsByUserAndModerationStatus("test@example.com", ModerationStatus.ACCEPTED, PageRequest.of(0, 10))).thenReturn(page);
-        when(postMapper.toPostDto(postFlatDto)).thenReturn(postDto);
+        when(postMapper.toPostResponse(postProjection)).thenReturn(postResponse);
 
         PostsResponse response = postQueryService.getMyPosts(0, 10, "published", "test@example.com");
 
-        assertEquals(1, response.getCount());
-        assertEquals(List.of(postDto), response.getPosts());
+        assertEquals(1, response.count());
+        assertEquals(List.of(postResponse), response.posts());
     }
 
     @Test
     void getMyPosts_ShouldReturnEmpty_WhenStatusUnknown() {
         PostsResponse response = postQueryService.getMyPosts(0, 10, "unknown_status", "test@example.com");
 
-        assertEquals(0, response.getCount());
-        assertTrue(response.getPosts().isEmpty());
+        assertEquals(0, response.count());
+        assertTrue(response.posts().isEmpty());
     }
 
 }

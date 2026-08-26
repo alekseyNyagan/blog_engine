@@ -5,8 +5,8 @@ import main.api.request.PostRequest;
 import main.api.request.PostVoteRequest;
 import main.api.response.CalendarResponse;
 import main.api.response.ResultResponse;
-import main.dto.CalendarDTO;
-import main.dto.PostDetailsFlatDto;
+import main.repository.projection.CalendarProjection;
+import main.repository.projection.PostDetailsProjection;
 import main.mapper.PostMapper;
 import main.model.Post;
 import main.model.PostVote;
@@ -57,13 +57,13 @@ class PostServiceTest {
     @DisplayName("getPostDetails should return flat DTO when post exists")
     void getPostDetails_ShouldReturnDto_WhenPostExists() {
         int postId = 1;
-        PostDetailsFlatDto expectedDto = mock(PostDetailsFlatDto.class);
-        when(postsRepository.findPostDetailsById(postId)).thenReturn(Optional.of(expectedDto));
+        PostDetailsProjection expectedProjection = mock(PostDetailsProjection.class);
+        when(postsRepository.findPostDetailsById(postId)).thenReturn(Optional.of(expectedProjection));
 
-        PostDetailsFlatDto actualDto = postService.getPostDetails(postId);
+        PostDetailsProjection actualProjection = postService.getPostDetails(postId);
 
-        assertNotNull(actualDto);
-        assertEquals(expectedDto, actualDto);
+        assertNotNull(actualProjection);
+        assertEquals(expectedProjection, actualProjection);
     }
 
     @Test
@@ -78,7 +78,7 @@ class PostServiceTest {
     @Test
     @DisplayName("incrementViewCount should increment when user is not authenticated")
     void incrementViewCount_ShouldIncrement_WhenUserIsNull() {
-        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        PostDetailsProjection post = new PostDetailsProjection(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
         postService.incrementViewCount(post, null);
         verify(postsRepository, times(1)).updateViewCount(6, 1);
     }
@@ -86,7 +86,7 @@ class PostServiceTest {
     @Test
     @DisplayName("incrementViewCount should not increment when user is the author")
     void incrementViewCount_ShouldNotIncrement_WhenUserIsAuthor() {
-        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        PostDetailsProjection post = new PostDetailsProjection(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
         UserDetails author = mock(UserDetails.class);
         when(author.getUsername()).thenReturn("author@example.com");
 
@@ -98,7 +98,7 @@ class PostServiceTest {
     @Test
     @DisplayName("incrementViewCount should not increment when user is a moderator")
     void incrementViewCount_ShouldNotIncrement_WhenUserIsModerator() {
-        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        PostDetailsProjection post = new PostDetailsProjection(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
         UserDetails moderator = mock(UserDetails.class);
         doReturn(List.of(new SimpleGrantedAuthority("user:moderate"))).when(moderator).getAuthorities();
 
@@ -110,7 +110,7 @@ class PostServiceTest {
     @Test
     @DisplayName("incrementViewCount should increment for regular user who is not the author")
     void incrementViewCount_ShouldIncrement_ForOtherUser() {
-        PostDetailsFlatDto post = new PostDetailsFlatDto(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
+        PostDetailsProjection post = new PostDetailsProjection(1, Instant.now(), true, 1, "User", null, "Title", "Text", 10, 2, 5, "author@example.com");
         UserDetails otherUser = mock(UserDetails.class);
         when(otherUser.getUsername()).thenReturn("other@example.com");
         doReturn(List.of(new SimpleGrantedAuthority("user:write"))).when(otherUser).getAuthorities();
@@ -124,8 +124,7 @@ class PostServiceTest {
     @Test
     void addPost_ShouldReturnSuccessResponse() {
         int userId = 1;
-        PostRequest request = new PostRequest();
-        request.setTags(List.of("tag1", "tag2"));
+        PostRequest request = new PostRequest(0L, (byte) 1, "Valid Title", List.of("tag1", "tag2"), "Valid Text Content");
         User user = mock(User.class);
 
         when(usersRepository.getReferenceById(userId)).thenReturn(user);
@@ -133,15 +132,14 @@ class PostServiceTest {
 
         ResultResponse response = postService.addPost(request, userId);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         verify(postsRepository).save(any(Post.class));
     }
 
     @Test
     void makePostVote_ShouldReturnSuccessResponse() {
         int userId = 1;
-        PostVoteRequest voteRequest = new PostVoteRequest();
-        voteRequest.setPostId(42);
+        PostVoteRequest voteRequest = new PostVoteRequest(42);
         Post post = mock(Post.class);
         User user = mock(User.class);
 
@@ -150,7 +148,7 @@ class PostServiceTest {
 
         ResultResponse response = postService.makePostVote(voteRequest, (byte) 1, userId);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         verify(post).addVote(any(PostVote.class));
         verify(postsRepository).save(post);
     }
@@ -158,9 +156,7 @@ class PostServiceTest {
     @Test
     void moderation_ShouldAcceptPost() {
         int moderatorId = 101;
-        ModerationRequest request = new ModerationRequest();
-        request.setPostId(7);
-        request.setDecision("accept");
+        ModerationRequest request = new ModerationRequest(7, "accept");
 
         Post post = new Post();
 
@@ -168,7 +164,7 @@ class PostServiceTest {
 
         ResultResponse response = postService.moderation(request, moderatorId);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         assertEquals(ModerationStatus.ACCEPTED, post.getModerationStatus());
         assertEquals(moderatorId, post.getModeratorId());
         verify(postsRepository).save(post);
@@ -178,8 +174,7 @@ class PostServiceTest {
     void updatePost_ShouldReturnSuccessResponse() {
         int userId = 1;
         int postId = 123;
-        PostRequest request = new PostRequest();
-        request.setTags(List.of("tag1", "tag2"));
+        PostRequest request = new PostRequest(0L, (byte) 1, "Valid Title", List.of("tag1", "tag2"), "Valid Text Content");
         User user = mock(User.class);
         Post post = mock(Post.class);
 
@@ -188,7 +183,7 @@ class PostServiceTest {
 
         ResultResponse result = postService.updatePost(postId, request, userId);
 
-        assertTrue(result.isResult());
+        assertTrue(result.result());
         verify(postsRepository).save(post);
     }
 
@@ -197,11 +192,11 @@ class PostServiceTest {
         int year = 2024;
         List<Integer> years = List.of(2023, 2024);
 
-        CalendarDTO dto1 = mock(CalendarDTO.class);
+        CalendarProjection dto1 = mock(CalendarProjection.class);
         when(dto1.getDate()).thenReturn("2024-06-06");
         when(dto1.getCount()).thenReturn(5);
 
-        CalendarDTO dto2 = mock(CalendarDTO.class);
+        CalendarProjection dto2 = mock(CalendarProjection.class);
         when(dto2.getDate()).thenReturn("2024-06-07");
         when(dto2.getCount()).thenReturn(2);
 
@@ -210,10 +205,10 @@ class PostServiceTest {
 
         CalendarResponse response = postService.getCalendar(year);
 
-        assertEquals(years, response.getYears());
-        assertEquals(2, response.getPosts().size());
-        assertEquals(5, response.getPosts().get("2024-06-06"));
-        assertEquals(2, response.getPosts().get("2024-06-07"));
+        assertEquals(years, response.years());
+        assertEquals(2, response.posts().size());
+        assertEquals(5, response.posts().get("2024-06-06"));
+        assertEquals(2, response.posts().get("2024-06-07"));
     }
 
 }

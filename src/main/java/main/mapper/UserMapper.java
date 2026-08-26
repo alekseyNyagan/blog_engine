@@ -1,9 +1,9 @@
 package main.mapper;
 
 import main.api.request.RegistrationRequest;
-import main.dto.BaseUserDto;
-import main.dto.PostCommentFlatDto;
-import main.dto.UserDto;
+import main.api.response.BaseUserResponse;
+import main.repository.projection.CommentProjection;
+import main.api.response.UserResponse;
 import main.model.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -13,7 +13,9 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = "spring", nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.SET_TO_DEFAULT)
 public interface UserMapper {
 
-    UserDto toUserDto(User user);
+    @Mapping(source = "isModerator", target = "moderator")
+    @Mapping(source = "isModerator", target = "settings")
+    UserResponse toUserResponse(User user, boolean isModerator, int moderationCount);
 
     @Mapping(source = "captchaSecret", target = "code")
     User fromRegistrationRequestToUser(RegistrationRequest registrationRequest);
@@ -21,5 +23,5 @@ public interface UserMapper {
     @Mapping(source = "userId", target = "id")
     @Mapping(source = "userName", target = "name")
     @Mapping(source = "userPhoto", target = "photo")
-    BaseUserDto toBaseUserDto(PostCommentFlatDto postCommentFlatDto);
+    BaseUserResponse toBaseUserResponse(CommentProjection commentProjection);
 }

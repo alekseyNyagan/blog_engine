@@ -47,7 +47,7 @@ public class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        registrationRequest = new RegistrationRequest();
+        registrationRequest = new RegistrationRequest("email@example.com", "name", "password", "captcha", "captchaSecret");
     }
 
     @Test
@@ -58,8 +58,8 @@ public class UserServiceTest {
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 
-        assertTrue(errorsResponse.isResult());
-        assertNull(errorsResponse.getErrors());
+        assertTrue(errorsResponse.result());
+        assertNull(errorsResponse.errors());
         verify(usersRepository, times(1)).save(any(User.class));
     }
 
@@ -71,8 +71,8 @@ public class UserServiceTest {
 
         ErrorsResponse errorsResponse = userService.addUser(registrationRequest);
 
-        assertFalse(errorsResponse.isResult());
-        assertEquals(validationErrors, errorsResponse.getErrors());
+        assertFalse(errorsResponse.result());
+        assertEquals(validationErrors, errorsResponse.errors());
         verify(usersRepository, never()).save(any(User.class));
     }
 
@@ -80,15 +80,14 @@ public class UserServiceTest {
     @DisplayName("Should update user profile successfully (no photo change)")
     void testUpdateProfile_SuccessNoPhotoChange() throws IOException {
         String email = "test@example.com";
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setName("New Name");
+        UpdateProfileRequest request = new UpdateProfileRequest("photo.jpg", "New Name", "email", "password", 0);
         User user = new User();
 
         when(usersRepository.findUserByEmail(email)).thenReturn(Optional.of(user));
 
         ErrorsResponse response = userService.updateProfile(request, null, email);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         assertEquals("New Name", user.getName());
         verify(usersRepository, times(1)).save(user);
     }
@@ -97,8 +96,7 @@ public class UserServiceTest {
     @DisplayName("Should update user profile and remove photo")
     void testUpdateProfile_RemovePhoto() throws IOException {
         String email = "test@example.com";
-        UpdateProfileRequest request = new UpdateProfileRequest();
-        request.setRemovePhoto(1);
+        UpdateProfileRequest request = new UpdateProfileRequest("photo.jpg", "New Name", "email", "password", 1);
         User user = new User();
         user.setPhoto("path/to/old/photo.jpg");
 
@@ -106,7 +104,7 @@ public class UserServiceTest {
 
         ErrorsResponse response = userService.updateProfile(request, null, email);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         assertNull(user.getPhoto());
         verify(usersRepository, times(1)).save(user);
     }
@@ -115,7 +113,7 @@ public class UserServiceTest {
     @DisplayName("Should update user profile with new photo")
     void testUpdateProfile_WithNewPhoto() throws IOException {
         String email = "test@example.com";
-        UpdateProfileRequest request = new UpdateProfileRequest();
+        UpdateProfileRequest request = new UpdateProfileRequest("photo.jpg", "New Name", "email", "password", 0);
         User user = new User();
         MultipartFile photo = new MockMultipartFile("photo", "new_photo.jpg", "image/jpeg", new byte[10]);
 
@@ -125,7 +123,7 @@ public class UserServiceTest {
 
         ErrorsResponse response = userService.updateProfile(request, photo, email);
 
-        assertTrue(response.isResult());
+        assertTrue(response.result());
         assertEquals("path/to/new/photo.jpg", user.getPhoto());
         verify(usersRepository, times(1)).save(user);
     }
@@ -134,7 +132,7 @@ public class UserServiceTest {
     @DisplayName("Should fail to update profile if photo is too large")
     void testUpdateProfile_PhotoTooLarge() throws IOException {
         String email = "test@example.com";
-        UpdateProfileRequest request = new UpdateProfileRequest();
+        UpdateProfileRequest request = new UpdateProfileRequest("photo.jpg", "New Name", "email", "password", 0);
         User user = new User();
         MultipartFile photo = new MockMultipartFile("photo", "large_photo.jpg", "image/jpeg", new byte[10]);
 
@@ -143,8 +141,8 @@ public class UserServiceTest {
 
         ErrorsResponse response = userService.updateProfile(request, photo, email);
 
-        assertFalse(response.isResult());
-        assertTrue(response.getErrors().containsKey("photo"));
+        assertFalse(response.result());
+        assertTrue(response.errors().containsKey("photo"));
         verify(usersRepository, never()).save(user);
     }
 }

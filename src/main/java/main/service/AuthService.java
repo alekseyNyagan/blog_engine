@@ -4,7 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import main.api.request.LoginRequest;
 import main.api.response.LoginResponse;
 import main.api.response.ResultResponse;
-import main.dto.UserDto;
+import main.api.response.UserResponse;
 import main.mapper.UserMapper;
 import main.model.enums.ModerationStatus;
 import main.repository.PostsRepository;
@@ -35,13 +35,13 @@ public class AuthService {
     }
 
     public LoginResponse login(LoginRequest loginRequest) {
-        log.info("Login attempt for user: {}", loginRequest.getEmail());
+        log.info("Login attempt for user: {}", loginRequest.email());
         Authentication auth = authenticationManager
                 .authenticate(
-                        new UsernamePasswordAuthenticationToken(loginRequest.getEmail(), loginRequest.getPassword()));
+                        new UsernamePasswordAuthenticationToken(loginRequest.email(), loginRequest.password()));
         SecurityContextHolder.getContext().setAuthentication(auth);
-        log.info("User {} successfully logged in", loginRequest.getEmail());
-        return getLoginResponse(loginRequest.getEmail());
+        log.info("User {} successfully logged in", loginRequest.email());
+        return getLoginResponse(loginRequest.email());
     }
 
     public LoginResponse check(String email) {
@@ -63,11 +63,9 @@ public class AuthService {
                 .orElseThrow(() -> new UsernameNotFoundException(email));
 
         boolean isModerator = authenticatedUser.getIsModerator() == 1;
+        int moderationCount = isModerator ? postsRepository.countPostsByModerationStatus(ModerationStatus.NEW) : 0;
 
-        UserDto userDto = mapper.toUserDto(authenticatedUser);
-        userDto.setModerator(isModerator);
-        userDto.setSettings(isModerator);
-        userDto.setModerationCount(isModerator ? postsRepository.countPostsByModerationStatus(ModerationStatus.NEW) : 0);
-        return new LoginResponse(true, userDto);
+        UserResponse userResponse = mapper.toUserResponse(authenticatedUser, isModerator, moderationCount);
+        return new LoginResponse(true, userResponse);
     }
 }

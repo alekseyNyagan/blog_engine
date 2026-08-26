@@ -34,11 +34,11 @@ public class UserValidator {
 
     public void validateRegistration(RegistrationRequest request) {
         Map<String, String> errors = new HashMap<>();
-        if (captchaCodeService.isCaptchaNotValid(request.getCaptchaSecret(), request.getCaptcha())) {
+        if (captchaCodeService.isCaptchaNotValid(request.captchaSecret(), request.captcha())) {
             errors.put(CAPTCHA_ERROR_KEY, CAPTCHA_ERROR_MESSAGE);
             throw new ValidationException(errors);
         }
-        if (usersRepository.findUserByEmail(request.getEmail()).isPresent()) {
+        if (usersRepository.findUserByEmail(request.email()).isPresent()) {
             errors.put(USER_WITH_EMAIL_EXISTS_ERROR_KEY, USER_WITH_EMAIL_EXISTS_ERROR_MESSAGE);
             throw new ValidationException(errors);
         }
@@ -46,12 +46,12 @@ public class UserValidator {
 
     public User validatePasswordChange(PasswordRequest request) {
         Map<String, String> errors = new HashMap<>();
-        if (captchaCodeService.isCaptchaNotValid(request.getCaptchaSecret(), request.getCaptcha())) {
+        if (captchaCodeService.isCaptchaNotValid(request.captchaSecret(), request.captcha())) {
             errors.put(CAPTCHA_ERROR_KEY, CAPTCHA_ERROR_MESSAGE);
             throw new ValidationException(errors);
         }
 
-        Optional<User> userOptional = usersRepository.findUserByCode(request.getCode());
+        Optional<User> userOptional = usersRepository.findUserByCode(request.code());
         if (userOptional.isEmpty()) {
             errors.put(RESTORE_PASSWORD_LINK_EXPIRED_KEY, RESTORE_PASSWORD_LINK_EXPIRED_MESSAGE);
             throw new ValidationException(errors);

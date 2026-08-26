@@ -45,11 +45,7 @@ class PostCommentServiceTest {
     // --- Вспомогательные методы ---
 
     private CommentRequest buildRequest(Object parentId, String text) {
-        CommentRequest request = new CommentRequest();
-        request.setParentId(parentId);
-        request.setPostId(POST_ID);
-        request.setText(text);
-        return request;
+        return new CommentRequest(parentId, POST_ID, text);
     }
 
     private Post mockPost() {
@@ -78,7 +74,7 @@ class PostCommentServiceTest {
         CommentRequest request = buildRequest("", COMMENT_TEXT);
         CommentResponse response = postCommentService.addComment(request, USER_ID);
 
-        assertEquals(SAVED_COMMENT_ID, response.getId());
+        assertEquals(SAVED_COMMENT_ID, response.id());
 
         ArgumentCaptor<PostComment> captor = ArgumentCaptor.forClass(PostComment.class);
         verify(postCommentsRepository).save(captor.capture());
@@ -98,7 +94,7 @@ class PostCommentServiceTest {
         CommentRequest request = buildRequest(PARENT_COMMENT_ID, COMMENT_TEXT);
         CommentResponse response = postCommentService.addComment(request, USER_ID);
 
-        assertEquals(SAVED_COMMENT_ID, response.getId());
+        assertEquals(SAVED_COMMENT_ID, response.id());
 
         ArgumentCaptor<PostComment> captor = ArgumentCaptor.forClass(PostComment.class);
         verify(postCommentsRepository).save(captor.capture());

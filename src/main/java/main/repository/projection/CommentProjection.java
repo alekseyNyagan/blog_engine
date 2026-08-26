@@ -1,8 +1,8 @@
-package main.dto;
+package main.repository.projection;
 
 import java.time.Instant;
 
-public record PostCommentFlatDto(
+public record CommentProjection(
         int id,
         Instant time,
         String text,
