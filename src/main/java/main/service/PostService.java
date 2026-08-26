@@ -95,7 +95,7 @@ public class PostService {
 
     public CalendarResponse getCalendar(int year) {
         List<Integer> yearsWithCreatedPosts = postsRepository.findYearsWithCreatedPosts();
-        Map<String, Integer> postsByYear = postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarProjection::getDate, CalendarProjection::getCount));
+        Map<String, Integer> postsByYear = postsRepository.countPostsByYear(year).stream().collect(Collectors.toMap(CalendarProjection::getDate, CalendarProjection::getCount, Integer::sum));
         return new CalendarResponse(yearsWithCreatedPosts, postsByYear);
     }
 
