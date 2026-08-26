@@ -16,7 +16,7 @@
         <org.projectlombok.version>1.18.46</org.projectlombok.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
         <testcontainers.version>2.0.5</testcontainers.version>
-        <flyway.version>12.8.1</flyway.version>
+        <flyway.version>13.3.0</flyway.version>
     </properties>
 
     <build>
@@ -102,7 +102,7 @@
     <parent>
         <artifactId>spring-boot-starter-parent</artifactId>
         <groupId>org.springframework.boot</groupId>
-        <version>4.1.0</version>
+        <version>4.1.1</version>
     </parent>
 
     <dependencies>
@@ -180,7 +180,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>3.0.3</version>
+            <version>3.1.0</version>
         </dependency>
         <dependency>
             <groupId>org.mapstruct</groupId>
@@ -190,7 +190,7 @@
         <dependency>
             <groupId>org.jsoup</groupId>
             <artifactId>jsoup</artifactId>
-            <version>1.22.2</version>
+            <version>1.23.1</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.session</groupId>
@@ -199,7 +199,7 @@
         <dependency>
             <groupId>io.lettuce</groupId>
             <artifactId>lettuce-core</artifactId>
-            <version>7.6.0.RELEASE</version>
+            <version>7.7.0.RELEASE</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
