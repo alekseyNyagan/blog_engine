@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.Set;
 
 @Repository
@@ -39,6 +39,7 @@ public interface TagsRepository extends JpaRepository<Tag, Integer> {
                 JOIN p.tags t
                 WHERE p.id = :postId
             """)
-    List<String> findTagNamesByPostId(@Param("postId") int postId);
+    Set<String> findTagNamesByPostId(@Param("postId") int postId);
 
+    Set<Tag> findByNameIn(Collection<String> names);
 }

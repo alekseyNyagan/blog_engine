@@ -7,6 +7,7 @@ import lombok.*;
 import main.model.enums.ModerationStatus;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -68,7 +69,7 @@ public class Post extends AbstractEntity {
             , inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
     @ToString.Exclude
-    private List<Tag> tags;
+    private Set<Tag> tags = new HashSet<>();
 
     public void addComment(PostComment comment) {
         if (comments == null) {

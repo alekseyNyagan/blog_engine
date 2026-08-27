@@ -15,7 +15,7 @@ import lombok.*;
 @Table(name = "tags")
 public class Tag extends AbstractEntity {
 
-    @Column(name = "name")
+    @Column(name = "name", unique = true)
     @NotNull
     private String name;
 }
