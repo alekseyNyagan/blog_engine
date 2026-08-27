@@ -11,6 +11,7 @@ import org.jsoup.Jsoup;
 import org.mapstruct.*;
 
 import java.util.List;
+import java.util.Set;
 
 @Mapper(unmappedTargetPolicy = ReportingPolicy.IGNORE, componentModel = MappingConstants.ComponentModel.SPRING, uses = {InstantMapper.class, PostCommentMapper.class})
 public interface PostMapper {
@@ -27,7 +28,7 @@ public interface PostMapper {
     @Mapping(source = "postDetailsProjection.userId", target = "user.id")
     @Mapping(source = "postDetailsProjection.userName", target = "user.name")
     @Mapping(source = "postDetailsProjection.userPhoto", target = "user.photo")
-    PostDetailsResponse toPostDetailsResponse(PostDetailsProjection postDetailsProjection, List<CommentProjection> postCommentFlatDtos, List<String> tags);
+    PostDetailsResponse toPostDetailsResponse(PostDetailsProjection postDetailsProjection, List<CommentProjection> postCommentFlatDtos, Set<String> tags);
 
     @Mapping(target = "tags", ignore = true)
     @Mapping(source = "active", target = "isActive")

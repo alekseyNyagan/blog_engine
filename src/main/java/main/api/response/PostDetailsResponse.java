@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
+import java.util.Set;
 
 @Schema(description = "DTO with information about post got by id")
 public record PostDetailsResponse(@Schema(description = "Post id") int id,
@@ -15,6 +16,6 @@ public record PostDetailsResponse(@Schema(description = "Post id") int id,
                                   @Schema(description = "Views count") int viewCount,
                                   @Schema(description = "Open or closed. True for open, false for closed") @JsonProperty("active") boolean active,
                                   @Schema(description = "List of comments") List<PostCommentResponse> comments,
-                                  @Schema(description = "List of tags") List<String> tags,
+                                  @Schema(description = "List of tags") Set<String> tags,
                                   @Schema(description = "Text of post") String text) {
 }

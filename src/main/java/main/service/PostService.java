@@ -28,10 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -119,14 +117,27 @@ public class PostService {
         User user = usersRepository.getReferenceById(userId);
         Post post = postMapper.fromPostRequestToPost(postRequest);
 
-        List<Tag> tags = new ArrayList<>();
-        postRequest.tags().forEach(t -> tags.add(new Tag(t)));
+        Set<String> tagNames = postRequest.tags();
+
+        Set<Tag> existingTags = tagsRepository.findByNameIn(tagNames);
+
+        Map<String, Tag> existingTagsMap = existingTags.stream().collect(Collectors.toMap(Tag::getName, Function.identity()));
+
+        Set<Tag> finalTags = new HashSet<>();
+
+        tagNames.forEach(tagName -> {
+            if (existingTagsMap.containsKey(tagName)) {
+                finalTags.add(existingTagsMap.get(tagName));
+            } else {
+                finalTags.add(new Tag(tagName));
+            }
+        });
 
         if (Boolean.TRUE.equals(globalSettingsService.getGlobalSettings().get(POST_PREMODERATION_SETTING)) && user.getIsModerator() != 1) {
             post.setModerationStatus(ModerationStatus.NEW);
         }
 
-        post.setTags(tags);
+        post.setTags(finalTags);
         post.setUser(user);
 
         return post;
