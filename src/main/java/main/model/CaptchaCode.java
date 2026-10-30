@@ -29,5 +29,6 @@ public class CaptchaCode extends AbstractEntity {
 
     @Column(name = "secret_code")
     @NotNull
+    @ToString.Exclude
     private String secretCode;
 }
