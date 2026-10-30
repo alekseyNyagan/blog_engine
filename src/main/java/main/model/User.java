@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import main.model.enums.Role;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.SourceType;
 
 import java.time.Instant;
@@ -17,6 +18,7 @@ import java.time.Instant;
 @NoArgsConstructor
 @ToString
 @Entity
+@DynamicUpdate
 @Table(name = "users")
 public class User extends AbstractEntity {
 
@@ -38,9 +40,11 @@ public class User extends AbstractEntity {
 
     @Column(name = "password")
     @NotNull
+    @ToString.Exclude
     private String password;
 
     @Column(name = "code")
+    @ToString.Exclude
     private String code;
 
     @Column(name = "photo")

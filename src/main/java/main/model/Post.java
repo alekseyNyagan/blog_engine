@@ -5,8 +5,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import main.model.enums.ModerationStatus;
+import org.hibernate.annotations.DynamicUpdate;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +19,7 @@ import java.util.Set;
 @NoArgsConstructor
 @ToString
 @Entity
+@DynamicUpdate
 @Table(name = "posts")
 public class Post extends AbstractEntity {
 
@@ -33,7 +36,7 @@ public class Post extends AbstractEntity {
     private Integer moderatorId;
 
     @NotNull
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     @ToString.Exclude
     private User user;
@@ -54,13 +57,13 @@ public class Post extends AbstractEntity {
     @NotNull
     private int viewCount;
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "post")
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "post", orphanRemoval = true)
     @ToString.Exclude
-    private List<PostComment> comments;
+    private List<PostComment> comments = new ArrayList<>();
 
-    @OneToMany(cascade = CascadeType.ALL, mappedBy = "post")
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "post", orphanRemoval = true)
     @ToString.Exclude
-    private Set<PostVote> votes;
+    private List<PostVote> votes = new ArrayList<>();
 
     @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
     @JoinTable(
@@ -71,18 +74,7 @@ public class Post extends AbstractEntity {
     @ToString.Exclude
     private Set<Tag> tags = new HashSet<>();
 
-    public void addComment(PostComment comment) {
-        if (comments == null) {
-            comments = new java.util.ArrayList<>();
-        }
-        comment.setPost(this);
-        comments.add(comment);
-    }
-
     public void addVote(PostVote vote) {
-        if (votes == null) {
-            votes = new java.util.HashSet<>();
-        }
         vote.setPost(this);
         votes.add(vote);
     }
